@@ -49,8 +49,7 @@ slice <- function(dt, low, high) relabeller(
 
 # parse foreground according to interval
 
-graphPartition <- function(res, referenceCommunities, coverts, ulim=60, verbose=F) {
-  browser()
+graphPartition <- function(res, mp, referenceCommunities, coverts, ulim=60, verbose=F) {
   gg <- graph(t(res[,list(user.a, user.b)]), directed=F)
   E(gg)$weight <- res$score
 
@@ -65,6 +64,13 @@ graphPartition <- function(res, referenceCommunities, coverts, ulim=60, verbose=
   inBigs <- !inSmalls
 
   base <- if (length(inSmalls)) {
+    for (covertMember in coverts[inSmalls]) {
+      browser()
+      comm <- comps$membership[covertMember]
+      others <- mp[setdiff(which(comps$membership == comm), covertMember), user_id]
+      ## others may or may not appear in reference communities - previously, they may have had no interaction pairs
+      # otherComms
+    }
     # for each covert user_id,
     # get community id, get community membership of that id
     #  if plurality covert members, then new community id
@@ -95,8 +101,8 @@ resolve <- function(
       coverts <- res[,unique(c(user.a[covert.a],user.b[covert.b]))]
       if (length(coverts)) {
         cat("something to do ", inc, length(coverts), mp[coverts, user_id], "\n") 
-        graphPartition(res, bgcomm, coverts)
-        
+        graphPartition(res, mp, readRDS(bgcomm), coverts)
+        # possibility: newly relevant user ids, that didn't previously appear in communities because no pairs?
       } else {
  
       }
