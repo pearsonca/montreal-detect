@@ -1,6 +1,9 @@
 #!/usr/bin/env Rscript
 
+rm(list=ls())
+
 require(data.table)
+require(igraph)
 
 args <- c("input/raw-pairs.rds","input/location-lifetimes.rds","input/background-clusters/spin-glass/pc-30-15", "output/matched/mid/lo/late/10/001-covert-0")
 
@@ -10,6 +13,7 @@ maxuid <- raw.dt[,max(user.a, user.b)]
 loclifes.dt <- readRDS(args[2])
 
 backgroundsrc <- args[3]
+bgcommunities <- list.files(sub("pc","base",args[3]), full.names = T)
 interval <- as.integer(sub(".+-(\\d+)-\\d+$","\\1", backgroundsrc))
 window <- as.integer(sub(".+-\\d+-(\\d+)$","\\1", backgroundsrc))
 
@@ -46,28 +50,34 @@ slice <- function(dt, low, high) relabeller(
 # parse foreground according to interval
 
 graphPartition <- function(res, referenceCommunities, coverts, ulim=60, verbose=F) {
+  browser()
   gg <- graph(t(res[,list(user.a, user.b)]), directed=F)
   E(gg)$weight <- res$score
 
   comps <- components(gg)
-  
+
   leftovers <- which(comps$csize > ulim)
   completeCommunities <- (1:comps$no)[-leftovers] # components to treat as their own communities
   
-  if (verbose) {
-    cat(sprintf("found %d components of size <= %d\n", length(completeCommunities), ulim))
-    cat(sprintf("found %d components of size > %d\n", length(leftovers), ulim))
-  }
-  
-  base <- if (length(completeCommunities)) {
-    newuids <- which(comps$membership %in% completeCommunities)
-    commap  <- rep.int(NA, max(completeCommunities))
-    commap[completeCommunities] <- 1:length(completeCommunities)
-    data.table(
-      new_user_id=newuids,
-      community=commap[comps$membership[newuids]],
-      key="new_user_id"
-    ) #  mp[newuids, list(user_id, community=newcoms)]
+  covertComms <- comps$membership[coverts]
+
+  inSmalls <- covertComms %in% completeCommunities
+  inBigs <- !inSmalls
+
+  base <- if (length(inSmalls)) {
+    # for each covert user_id,
+    # get community id, get community membership of that id
+    #  if plurality covert members, then new community id
+    #  else, take other users, look up their communities in reference
+#     newuids <- which(comps$membership %in% completeCommunities)
+#     commap  <- rep.int(NA, max(completeCommunities))
+#     commap[completeCommunities] <- 1:length(completeCommunities)
+#     data.table(
+#       new_user_id=newuids,
+#       community=commap[comps$membership[newuids]],
+#       key="new_user_id"
+#     ) #  mp[newuids, list(user_id, community=newcoms)]
+    data.table(new_user_id=coverts, community=-1)
   } else data.table(new_user_id=integer(0), community=integer(0))
   
   list(gg=gg, comps=comps, leftovers=leftovers, base=base)
@@ -80,18 +90,18 @@ resolve <- function(
   st = base.dt[1, floor(start/60/60/24)]
   n <- min(ceiling(base.dt[,max(end)/60/60/24 - st]/intDays), mxint, na.rm = TRUE)
   targets <- 1:n
-  lapply(targets, function(inc) {
+  mapply(function(inc, bgcomm) {
     with(slice(base.dt, st + inc*intDays-winDays, st + inc*intDays), {
       coverts <- res[,unique(c(user.a[covert.a],user.b[covert.b]))]
       if (length(coverts)) {
         cat("something to do ", inc, length(coverts), mp[coverts, user_id], "\n") 
-        #graphPartition(res, coverts)
+        graphPartition(res, bgcomm, coverts)
         
       } else {
  
       }
     })
-  })
+  }, targets, bgcommunities)
   # completed <- as.integer(gsub(".rds","", list.files(outputdir, "rds") ))
   # want <- targets[c(-completed,-(n+1))]
   # #  system.time(
@@ -106,4 +116,4 @@ resolve <- function(
   # }), mc.cores = crs, mc.allow.recursive = F)
 }
 
-resolve(ref.dt, interval, window)
+tar <- resolve(ref.dt, interval, window)
