@@ -4,52 +4,22 @@ rm(list=ls())
 
 require(data.table)
 require(igraph)
+require(parallel)
 
-args <- c("input/raw-pairs.rds","input/location-lifetimes.rds","input/background-clusters/spin-glass/pc-30-15", "output/matched/mid/lo/late/10/001-covert-0")
+args <- c("input/background-clusters/spin-glass/agg-30-30/005.rds", "input/background-clusters/spin-glass/pc-30-30/005.rds", "output/matched/mid/lo/late/10/001-covert-0/005-acc.rds")
 
-raw.dt <- readRDS(args[1])
-maxuid <- raw.dt[,max(user.a, user.b)]
-
-loclifes.dt <- readRDS(args[2])
-
-backgroundsrc <- args[3]
-bgcommunities <- list.files(sub("pc","base",args[3]), full.names = T)
-interval <- as.integer(sub(".+-(\\d+)-\\d+$","\\1", backgroundsrc))
-window <- as.integer(sub(".+-\\d+-(\\d+)$","\\1", backgroundsrc))
-
-# this will be something like XYZ(15|30)-(15|30), where first number is window, second is interval
-foregroundpat <- args[4]
-foregroundcc.dt <- setkey(fread(paste0(foregroundpat,"-cc.csv"), col.names = c("user.a","user.b","location_id","start","end","type")), location_id)
-
-# trim this by location appearances
-trimforegroundcc.dt <- loclifes.dt[foregroundcc.dt][end > arrive & start < depart, list(user.a, user.b, location_id, start, end, type)]
-
-# no trim required - intersection with real users
-foregroundcu.dt <- fread(paste0(foregroundpat,"-cu.csv"), col.names = c("user.a","user.b","location_id","start","end","type"))
-
-
-foreground.dt <- rbind(foregroundcu.dt, trimforegroundcc.dt)[,list(user.a,user.b,start,end)]
-setcolorder(foreground.dt,c("user.a", "user.b", "start", "end"))
-
-temp <- rbind(foreground.dt, raw.dt)
-temp[
-  user.b < user.a,
-  `:=`(user.b = user.a, user.a = user.b)
-]
-
-ref.dt <- setkey(temp, start, end)
+backgroundAgg <- readRDS(args[1])
+backgroundPC <- readRDS(args[2])
+foregroundAgg <- readRDS(args[3])
 
 source("../montreal-digest/buildStore.R")
 
-slice <- function(dt, low, high) relabeller(
-  dt[start < high*24*3600 & low*24*3600 < end,
-     list(score=.N, covert.a=user.a < 0, covert.b=user.b < 0),
-     by=list(user.a, user.b)]
-)
-
 # parse foreground according to interval
 
-graphPartition <- function(res, mp, referenceCommunities, coverts, ulim=60, verbose=F) {
+graphPartition <- function(res, mp, referenceCommunities, ulim=60, verbose=F) {
+  setkey(referenceCommunities, user_id)
+  allnewusers <- mp[user_id %in% setdiff(mp[res[,unique(c(user.a, user.b))], user_id], referenceCommunities$user_id), new_user_id]
+
   gg <- graph(t(res[,list(user.a, user.b)]), directed=F)
   E(gg)$weight <- res$score
 
@@ -58,68 +28,50 @@ graphPartition <- function(res, mp, referenceCommunities, coverts, ulim=60, verb
   leftovers <- which(comps$csize > ulim)
   completeCommunities <- (1:comps$no)[-leftovers] # components to treat as their own communities
   
-  covertComms <- comps$membership[coverts]
+  newComms <- comps$membership[allnewusers]
 
-  inSmalls <- covertComms %in% completeCommunities
+  inSmalls <- newComms %in% completeCommunities
   inBigs <- !inSmalls
 
-  base <- if (length(inSmalls)) {
-    for (covertMember in coverts[inSmalls]) {
-      browser()
-      comm <- comps$membership[covertMember]
-      others <- mp[setdiff(which(comps$membership == comm), covertMember), user_id]
-      ## others may or may not appear in reference communities - previously, they may have had no interaction pairs
-      # otherComms
-    }
-    # for each covert user_id,
-    # get community id, get community membership of that id
-    #  if plurality covert members, then new community id
-    #  else, take other users, look up their communities in reference
-#     newuids <- which(comps$membership %in% completeCommunities)
-#     commap  <- rep.int(NA, max(completeCommunities))
-#     commap[completeCommunities] <- 1:length(completeCommunities)
-#     data.table(
-#       new_user_id=newuids,
-#       community=commap[comps$membership[newuids]],
-#       key="new_user_id"
-#     ) #  mp[newuids, list(user_id, community=newcoms)]
-    data.table(new_user_id=coverts, community=-1)
+  base <- if (sum(inSmalls)) {
+    consensusComms <- sapply(allnewusers[inSmalls], function(newMember){
+      comm <- comps$membership[newMember]
+      others <- setkey(mp[setdiff(which(comps$membership == comm), newMember), list(user_id)], user_id)
+      othercomms <- referenceCommunities[others]
+      othercomms[is.na(community), community := -1]
+      tmp <- othercomms[,.N,by=community]
+      tmp[N==max(N),max(community)]
+    })
+    data.table(new_user_id=allnewusers[inSmalls], community=consensusComms)
   } else data.table(new_user_id=integer(0), community=integer(0))
   
-  list(gg=gg, comps=comps, leftovers=leftovers, base=base)
-}
-
-resolve <- function(
-  base.dt, intDays, winDays, #outputdir, crs,
-  mxint=NA, verbose, ...
-) {
-  st = base.dt[1, floor(start/60/60/24)]
-  n <- min(ceiling(base.dt[,max(end)/60/60/24 - st]/intDays), mxint, na.rm = TRUE)
-  targets <- 1:n
-  mapply(function(inc, bgcomm) {
-    with(slice(base.dt, st + inc*intDays-winDays, st + inc*intDays), {
-      coverts <- res[,unique(c(user.a[covert.a],user.b[covert.b]))]
-      if (length(coverts)) {
-        cat("something to do ", inc, length(coverts), mp[coverts, user_id], "\n") 
-        graphPartition(res, mp, readRDS(bgcomm), coverts)
-        # possibility: newly relevant user ids, that didn't previously appear in communities because no pairs?
-      } else {
- 
-      }
+  if (sum(inBigs)) {
+    bigConsensusComms <- sapply(allnewusers[inBigs], function(newMember) {
+      others <- setkey(mp[
+        setdiff(targettedGraphPartitionOne(newMember, gg, comps), newMember),
+        list(user_id)
+      ], user_id)
+      othercomms <- referenceCommunities[others]
+      othercomms[is.na(community), community := -1]
+      othercomms[,.N,by=community][N==max(N), max(community)]
     })
-  }, targets, bgcommunities)
-  # completed <- as.integer(gsub(".rds","", list.files(outputdir, "rds") ))
-  # want <- targets[c(-completed,-(n+1))]
-  # #  system.time(
-  # mclapply(want, function(inc) with(slice(base.dt, st + inc*intDays-winDays, st + inc*intDays), {
-  #   store <- if (dim(res)[1] == 0) emptygraph else buildStore(res)
-  #   resfile <- sprintf("%s/%03d.rds", outputdir, inc)
-  #   if (verbose) cat("finishing", resfile,"\n")
-  #   saveRDS(
-  #     originalUserIDs(store, mp),
-  #     resfile
-  #   )
-  # }), mc.cores = crs, mc.allow.recursive = F)
+    # for each new users
+    base <- rbind(base, data.table(new_user_id=allnewusers[inBigs], community=bigConsensusComms))
+  }
+  originalUserIDs(base, mp)
 }
 
-tar <- resolve(ref.dt, interval, window)
+emptygraph <- data.table(user_id=integer(), community=integer())
+
+perturbedPersistenceComms <- function(accPert, bgacc, bgpc, verbose) {
+  if (dim(accPert)[1]) {
+      base.dt <- rbind(accPert, bgacc)
+      ret <- with(relabeller(base.dt), graphPartition(res, mp, bgpc))
+      ret
+  } else emptygraph
+}
+
+saveRDS(
+  perturbedPersistenceComms(foregroundAgg, backgroundAgg, backgroundPC, verbose = T),
+  sub("-acc.rds",".rds", args[3], fixed = T)
+)
