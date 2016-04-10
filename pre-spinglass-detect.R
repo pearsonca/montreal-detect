@@ -120,6 +120,10 @@ resolve <- function(
 
 perturbedCommunities <- resolve(ref.dt, interval, window)
 
+# refUsers <- data.table(user_id=rep(-1:-10, times=68), increment=rep(1:68, each=10), key="user_id")
+# plot_ref <- merge(refUsers, perturbedCommunities, by=c("increment","user_id"), all=T)
+# ggplot(plot_ref[user_id < 0]) + facet_grid(user_id ~ .) + aes(x=increment, y=(community==-1), color=(community==-1)) + geom_point()
+
 scorePerturbations <- function(pertComms, bgcommunities) {
   subset(rbindlist(mapply(function(inc, bginc) {
     perturb.dt <- pertComms[increment == inc, list(user_id, community)]
