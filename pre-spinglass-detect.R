@@ -143,7 +143,7 @@ resolve <- function(
 }
 
 with(parse_args(
-  c("input/raw-pairs.rds", "input/location-lifetimes.rds", "input/background-clusters/spin-glass/base-15-30", "output/matched/mid/lo/late/10/001-covert-0", "output/matched/mid/lo/late/10/001-covert-0-base.rds")
+#  c("input/raw-pairs.rds", "input/location-lifetimes.rds", "input/background-clusters/spin-glass/base-15-30", "output/matched/mid/lo/late/10/001-covert-0", "output/matched/mid/lo/late/10/001-covert-0-base.rds")
 ),{
   maxuid <- raw.dt[,max(user.a, user.b)]
   bgcommunities <- filelister(srcpath)
@@ -170,99 +170,5 @@ with(parse_args(
   
   perturbedCommunities <- resolve(ref.dt, interval, window, bgcommunities)
   
-  saveRDS(perturbedCommunities, "output/matched/mid/lo/late/10/001-covert-0-base.rds")
+  saveRDS(perturbedCommunities, outpath)
 })
-
-quit()
-
-# parse foreground according to interval
-
-# refUsers <- data.table(user_id=rep(-1:-10, times=68), increment=rep(1:68, each=10), key="user_id")
-# plot_ref <- merge(refUsers, perturbedCommunities, by=c("increment","user_id"), all=T)
-# ggplot(plot_ref[user_id < 0]) + facet_grid(user_id ~ .) + aes(x=increment, y=(community==-1), color=(community==-1)) + geom_point()
-
-scorePerturbations <- function(pertComms, bgcommunities) {
-  subset(rbindlist(mapply(function(inc, bginc) {
-    perturb.dt <- pertComms[increment == inc, list(user_id, community)]
-    if (dim(perturb.dt)[1]) {
-      perturbed <- perturb.dt[,unique(community)]
-      back.dt <- readRDS(bginc)[community %in% perturbed]
-      input.dt <- rbind(back.dt, perturb.dt)
-      if (dim(input.dt)[1]) input.dt[, {
-        tmp <- combn(user_id, 2)
-        list(user.a = tmp[1,], user.b = tmp[2,], score = 1, increment = inc)
-      },
-      by=list(community)
-      ] else data.table(community=integer(0), user.a = integer(0), user.b=integer(0), score=integer(0), increment=integer(0))
-    } else data.table(community=integer(0), user.a = integer(0), user.b=integer(0), score=integer(0), increment=integer(0))
-  }, 1:length(bgcommunities), bgcommunities, SIMPLIFY = F))
-  , select=-community)
-}
-
-perturbedScores <- scorePerturbations(perturbedCommunities, bgcommunities)
-
-accumPerturbedScores <- function(perturbedScores, discount, censor, n) {
-  censor_score <- discount^censor
-  Reduce(
-    function(prev, currentN) {
-      newres <- rbind(perturbedScores[increment == currentN, list(user.a, user.b, score)], data.table::copy(prev)[, score := score*discount ])
-      newres[,list(score = sum(score)), keyby=list(user.a, user.b)][score > censor_score]
-    },
-    2:n,
-    perturbedScores[increment == 1, list(user.a, user.b, score)],
-    accumulate = T
-  )
-}
-
-accumulatedPerturbs <- accumPerturbedScores(perturbedScores, 0.9, 6, length(bgcommunities))
-
-# have a directory from base file
-# save 001, 002, etc for each list element
-
-mapply(function(accPerturbs, inc) {
-  # browser()
-  saveRDS(accPerturbs, sprintf("%s/%03d-acc.rds", foregroundpat, inc))
-}, accumulatedPerturbs, 1:length(accumulatedPerturbs))
-
-
-args <- c("input/raw-pairs.rds", "input/location-lifetimes.rds", "input/background-clusters/spin-glass/pc-15-30", "output/matched/mid/lo/late/10/001-covert-0")
-
-raw.dt <- readRDS(args[1])
-maxuid <- raw.dt[,max(user.a, user.b)]
-
-loclifes.dt <- readRDS(args[2])
-
-backgroundsrc <- args[3]
-bgcommunities <- list.files(sub("pc","base",args[3]), full.names = T)
-interval <- as.integer(sub(".+-(\\d+)-\\d+$","\\1", backgroundsrc))
-window <- as.integer(sub(".+-\\d+-(\\d+)$","\\1", backgroundsrc))
-
-# this will be something like XYZ(15|30)-(15|30), where first number is window, second is interval
-foregroundpat <- args[4]
-foregroundcc.dt <- setkey(fread(paste0(foregroundpat,"-cc.csv"), col.names = c("user.a","user.b","location_id","start","end","type")), location_id)
-
-# trim this by location appearances
-trimforegroundcc.dt <- loclifes.dt[foregroundcc.dt][end > arrive & start < depart, list(user.a, user.b, location_id, start, end, type)]
-
-# no trim required - intersection with real users
-foregroundcu.dt <- fread(paste0(foregroundpat,"-cu.csv"), col.names = c("user.a","user.b","location_id","start","end","type"))
-
-
-foreground.dt <- rbind(foregroundcu.dt, trimforegroundcc.dt)[,list(user.a,user.b,start,end)]
-setcolorder(foreground.dt,c("user.a", "user.b", "start", "end"))
-
-temp <- rbind(foreground.dt, raw.dt)
-temp[
-  user.b < user.a,
-  `:=`(user.b = user.a, user.a = user.b)
-  ]
-
-ref.dt <- setkey(temp[user.a != user.b], start, end)
-
-source("../montreal-digest/buildStore.R")
-
-slice <- function(dt, low, high) relabeller(
-  dt[start < high*24*3600 & low*24*3600 < end,
-     list(score=.N, covert.a=user.a < 0, covert.b=user.b < 0),
-     by=list(user.a, user.b)]
-)
