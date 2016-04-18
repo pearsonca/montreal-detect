@@ -13,10 +13,10 @@ require(parallel)
 
 readForeground <- function(simpathroot) {
   cc.dt <- setkey(
-    fread(paste0(simpathroot,"-cc.csv"),
+    fread(paste0(sub("/$","",simpathroot),"-cc.csv"),
           col.names = c("user.a","user.b","location_id","start","end","type")
     ), location_id)
-  cu.dt <- fread(paste0(simpathroot,"-cu.csv"), col.names = c("user.a","user.b","location_id","start","end","type"))
+  cu.dt <- fread(paste0(sub("/$","",simpathroot),"-cu.csv"), col.names = c("user.a","user.b","location_id","start","end","type"))
   list(cc.dt=cc.dt, cu.dt=cu.dt)
 }
 
@@ -143,7 +143,7 @@ resolve <- function(
 }
 
 with(parse_args(
-#  c("input/raw-pairs.rds", "input/location-lifetimes.rds", "input/background-clusters/spin-glass/base-15-30", "output/matched/mid/lo/late/10/001-covert-0", "output/matched/mid/lo/late/10/001-covert-0-base.rds")
+#  c("input/raw-pairs.rds", "input/raw-location-lifetimes.rds", "input/background-clusters/spin-glass/base-15-30", "output/matched/mid/lo/late/10/001-covert-0", "output/matched/mid/lo/late/10/001-covert-0-base.rds")
 ),{
   maxuid <- raw.dt[,max(user.a, user.b)]
   bgcommunities <- filelister(srcpath)
