@@ -38,11 +38,23 @@ rm(list=ls())
 
 foregroundSnapshots <- readRDS("output/matched/mid/lo/late/10/001-covert-0-base.rds")
 foregroundN <- 10
-n <- 61
+n <- 135
 res <- data.table(increment=1:n,
   snapFPR=numeric(n), snapTPR=numeric(n),
   pcFPR=numeric(n), pcTPR=numeric(n),
   key="increment"
+)
+
+covertStates <- c(abs="absent",big="present in large community",lit="present in small community")
+
+covertTimeLine <- data.table(
+  increment=rep(1:n, each=foregroundN), user_id=rep(-(1:foregroundN), times=n),
+  outcome=factor(covertStates["abs"], levels=covertStates), key=c("increment","user_id")
+)
+
+covertPersistence <- data.table(
+  increment=rep(1:n, each=foregroundN), user_id=rep(-(1:foregroundN), times=n),
+  outcome=factor(covertStates["abs"], levels=covertStates), key=c("increment","user_id")
 )
 
 for (i in 1:n) {
@@ -53,11 +65,21 @@ for (i in 1:n) {
   )
 
   backgroundSnapshot <- readRDS(args[1])
-  foregroundSnapshot <- foregroundSnapshots[increment == i, list(user_id, community)]
+  foregroundSnapshot <- foregroundSnapshots[increment == i, user_id, keyby=community]
   counts <- rbind(backgroundSnapshot, foregroundSnapshot)[,
     list(total=.N, bg=sum(user_id >= 0), fg=sum(user_id<0)),
     keyby=community
   ]
+  
+  snap <- counts[foregroundSnapshot][user_id < 0]
+  if (dim(snap)[1]) {
+    covertTimeLine[setkey(snap[,
+      list(increment = i, outcome = ifelse(total > 30, covertStates["big"], covertStates["lit"])),
+      by=user_id
+      ], increment, user_id),
+      outcome := i.outcome
+    ]
+  }
   
   res[increment == i,
     snapFPR:=counts[total <= 30, sum(bg)]/max(counts[,sum(bg)],1),
@@ -66,13 +88,31 @@ for (i in 1:n) {
     snapTPR:=counts[total <= 30, sum(fg)]/foregroundN
   ]
   
+  if (!file.exists(args[2])) {
+    cat("missing background",i,"\n")
+    next()
+  }
   backgroundPersistent <- readRDS(args[2])
-  foregroundPersistent <- readRDS(args[3])
+  tres <- try(readRDS(args[3]))
+  foregroundPersistent <- if (class(tres)[1] == "try-error") {
+    cat("missing",i,"\n")
+    data.table(user_id=integer(), community=integer(), key="community")
+  } else setkey(tres, community)
 
   counts <- rbind(backgroundPersistent, foregroundPersistent)[,
     list(total=.N, bg=sum(user_id >= 0), fg=sum(user_id<0)),
     keyby=community
   ]
+  
+  snap <- counts[foregroundPersistent][user_id < 0]
+  if (dim(snap)[1]) {
+    covertPersistence[setkey(snap[,
+      list(increment = i, outcome = ifelse(total > 30, covertStates["big"], covertStates["lit"])),
+      by=user_id
+      ], increment, user_id),
+    outcome := i.outcome
+    ]
+  }
   
   res[increment == i,
     pcFPR := counts[total <= 30, sum(bg)]/counts[,sum(bg)]
@@ -89,12 +129,18 @@ require(reshape2)
 pltres <- melt.data.table(res, id.vars="increment", variable.name = "measure", value.name = "rate")
 
 pltres[,
-  stage := factor(gsub("[FT]PR", "", measure))
+  `community analysis` := factor(c(pc="persistence", snap="snapshot")[gsub("[FT]PR", "", measure)])
 ][,
   outcome := factor(gsub(".+([FT]PR)","\\1", measure))
 ]
 
-ggplot(pltres) + theme_bw() +
-  aes(x=increment/2, y=rate, color=outcome, linetype=stage) + geom_line() +
-  labs(x="increment") + scale_color_manual(values=c(FPR='red',TPR='blue')) +
-  scale_linetype_manual(values=c(pc="solid",snap="dashed"))
+ggplot(pltres) + theme_bw() + theme(panel.border=element_blank()) +
+  aes(x=increment, y=rate, color=outcome, linetype=`community analysis`) + geom_line() +
+  scale_color_manual(values=c(FPR='red',TPR='blue')) + labs(y="TPR & FPR") +
+  scale_linetype_manual(values=c(persistence="solid",snapshot="dashed"))
+
+ggplot(covertTimeLine) + theme_bw() + aes(x=increment, y=factor(user_id), fill=outcome) +
+  geom_raster() + scale_fill_manual(values=c(absent="red",`present in large community`="yellow",`present in small community`="green"))
+  
+ggplot(covertPersistence) + theme_bw() + aes(x=increment, y=factor(user_id), fill=outcome) +
+  geom_raster() + scale_fill_manual(values=c(absent="red",`present in large community`="yellow",`present in small community`="green"))

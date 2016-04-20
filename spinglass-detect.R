@@ -116,11 +116,11 @@ resolve <- function(agg.dt, pc.dt, pertpath, verbose) {
   if (verbose) cat(sprintf("finishing %s\n", newfile))
 }
 
-#for (i in 86:113) {
+for (i in 85) {
 do.call(resolve, parse_args(
-#  c(sprintf("input/background-clusters/spin-glass/agg-15-30/%03d.rds",i),sprintf("input/background-clusters/spin-glass/pc-15-30/%03d.rds",i),sprintf("output/matched/mid/lo/late/10/001-covert-0/%03d-acc.rds",i), "-v")
+  c(sprintf("input/background-clusters/spin-glass/agg-15-30/%03d.rds",i),sprintf("input/background-clusters/spin-glass/pc-15-30/%03d.rds",i),sprintf("output/matched/mid/lo/late/10/001-covert-0/%03d-acc.rds",i), "-v")
 ))
-#}
+}
 #   args <- c(
 #     sprintf("input/background-clusters/spin-glass/agg-15-30/%03d.rds",i),
 #     sprintf("input/background-clusters/spin-glass/pc-15-30/%03d.rds",i),
