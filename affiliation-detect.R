@@ -36,27 +36,55 @@ rm(list=ls())
 #   compute # of non-covert members in small vs large comms
 #   compute TPR, FPR
 
-foregroundSnapshots <- readRDS("output/matched/mid/lo/late/10/001-covert-0-base.rds")
+lf <- "mid"
+pwr <- "lo"
+pk <- "late"
+
+# lf <- "mid"
+# pwr <- "med"
+# pk <- "middle"
+
+foregroundSnapshots <- readRDS(sprintf("output/matched/%s/%s/%s/10/001-covert-0-base.rds",lf,pwr,pk))
 foregroundN <- 10
 n <- 135
 res <- data.table(increment=1:n,
-  snapFPR=numeric(n), snapTPR=numeric(n),
-  pcFPR=numeric(n), pcTPR=numeric(n),
+  snapFPR=numeric(n), snapTPR=numeric(n), snapAltTPR=numeric(n),
+  pcFPR=numeric(n), pcTPR=numeric(n), pcAltTPR=numeric(n),
   key="increment"
 )
 
 covertStates <- c(abs="absent",big="present in large community",lit="present in small community")
 
+bgcomp_user_ids <- readRDS("input/user.RData")[
+  (lifetime_main == "mid" & pwr_main == "lo" & peak_main == "late"), user_id
+  ]
+
+altfgN <- min(foregroundN, length(bgcomp_user_ids))
+bgsmp <- sample(bgcomp_user_ids, altfgN)
+
 covertTimeLine <- data.table(
-  increment=rep(1:n, each=foregroundN), user_id=rep(-(1:foregroundN), times=n),
+  increment=rep(1:n, each=foregroundN+altfgN), user_id=rep(c(-(1:foregroundN), bgsmp), times=n),
   outcome=factor(covertStates["abs"], levels=covertStates), key=c("increment","user_id")
 )
 
 covertPersistence <- data.table(
-  increment=rep(1:n, each=foregroundN), user_id=rep(-(1:foregroundN), times=n),
+  increment=rep(1:n, each=foregroundN+altfgN), user_id=rep(c(-(1:foregroundN), bgsmp), times=n),
   outcome=factor(covertStates["abs"], levels=covertStates), key=c("increment","user_id")
 )
 
+covertSnapAccumulation <- data.table(
+  increment=rep(1:n, each=foregroundN+altfgN), user_id=rep(c(-(1:foregroundN), bgsmp), times=n),
+  count = 0, key=c("increment","user_id")
+)
+
+covertPersistAccumulation <- data.table(
+  increment=rep(1:n, each=foregroundN+altfgN), user_id=rep(c(-(1:foregroundN), bgsmp), times=n),
+  count = 0, key=c("increment","user_id")
+)
+
+## compute some random background comparison on mid/lo/late users
+
+## compute 
 for (i in 1:n) {
   args <- c(
     sprintf("input/background-clusters/spin-glass/base-15-30/%03d.rds",i),
@@ -65,29 +93,36 @@ for (i in 1:n) {
   )
 
   backgroundSnapshot <- readRDS(args[1])
+  backgroundSampshot <- backgroundSnapshot[user_id %in% bgsmp, user_id, keyby=community]
   foregroundSnapshot <- foregroundSnapshots[increment == i, user_id, keyby=community]
+  
   counts <- rbind(backgroundSnapshot, foregroundSnapshot)[,
-    list(total=.N, bg=sum(user_id >= 0), fg=sum(user_id<0)),
+    list(total=.N, bg=sum(user_id >= 0), fg=sum(user_id<0), altfg=length(intersect(user_id, bgsmp))),
     keyby=community
   ]
   
-  snap <- counts[foregroundSnapshot][user_id < 0]
+  snap <- rbind(
+    counts[foregroundSnapshot][user_id < 0], # sometimes regular users are added due to covert perturbation
+    counts[backgroundSampshot]
+  )
+  
   if (dim(snap)[1]) {
-    covertTimeLine[setkey(snap[,
-      list(increment = i, outcome = ifelse(total > 30, covertStates["big"], covertStates["lit"])),
+    jn <- setkey(snap[,
+      list(increment = i, found = total <= 30),
       by=user_id
-      ], increment, user_id),
-      outcome := i.outcome
-    ]
+    ], increment, user_id)
+    covertSnapAccumulation[jn, count := found + 0]
+    covertTimeLine[jn, outcome := ifelse(found, covertStates["lit"], covertStates["big"])]
   }
   
   res[increment == i,
-    snapFPR:=counts[total <= 30, sum(bg)]/max(counts[,sum(bg)],1),
+    `:=`(
+      snapFPR = counts[total <= 30, sum(bg)]/max(counts[,sum(bg)],1),
+      snapTPR = counts[total <= 30, sum(fg)]/foregroundN,
+      snapAltTPR = counts[total <= 30, sum(altfg)]/altfgN
+    )
   ]
-  res[increment == i,
-    snapTPR:=counts[total <= 30, sum(fg)]/foregroundN
-  ]
-  
+
   if (!file.exists(args[2])) {
     cat("missing background",i,"\n")
     next()
@@ -100,28 +135,43 @@ for (i in 1:n) {
   } else setkey(tres, community)
 
   counts <- rbind(backgroundPersistent, foregroundPersistent)[,
-    list(total=.N, bg=sum(user_id >= 0), fg=sum(user_id<0)),
+    list(total=.N, bg=sum(user_id >= 0), fg=sum(user_id<0), altfg=length(intersect(user_id, bgsmp))),
     keyby=community
   ]
+
+  backgroundSampsist <- backgroundPersistent[user_id %in% bgsmp, user_id, keyby=community]
   
-  snap <- counts[foregroundPersistent][user_id < 0]
+  snap <- rbind(
+    counts[foregroundPersistent][user_id < 0], # sometimes regular users are added due to covert perturbation
+    counts[backgroundSampsist]
+  )
+    
+  #snap <- counts[foregroundPersistent][user_id < 0]
+
   if (dim(snap)[1]) {
-    covertPersistence[setkey(snap[,
-      list(increment = i, outcome = ifelse(total > 30, covertStates["big"], covertStates["lit"])),
+    jn <- setkey(snap[,
+      list(increment = i, found = total <= 30),
       by=user_id
-      ], increment, user_id),
-    outcome := i.outcome
-    ]
+    ], increment, user_id)
+    covertPersistAccumulation[jn, count := found + 0]
+    covertPersistence[jn, outcome := ifelse(found, covertStates["lit"], covertStates["big"])]
   }
   
   res[increment == i,
-    pcFPR := counts[total <= 30, sum(bg)]/counts[,sum(bg)]
-  ]
-  res[increment == i,
-    pcTPR := counts[total <= 30, sum(fg)]/foregroundN
+    `:=`(
+      pcFPR = counts[total <= 30, sum(bg)]/counts[,sum(bg)],
+      pcTPR = counts[total <= 30, sum(fg)]/foregroundN,
+      pcAltTPR = counts[total <= 30, sum(altfg)]/altfgN
+    )
   ]
   
 }
+
+snapAcc <- covertSnapAccumulation[,list(increment, cs=cumsum(count)), by=user_id]
+persAcc <- covertPersistAccumulation[,list(increment, cs=cumsum(count)), by=user_id]
+
+ggplot(snapAcc) + aes(y=cs,x=increment, color=factor(user_id)) + geom_step() + theme_bw()
+ggplot(persAcc) + aes(y=cs,x=increment, color=factor(user_id)) + geom_step() + theme_bw()
 
 require(ggplot2)
 require(reshape2)
@@ -129,7 +179,7 @@ require(reshape2)
 pltres <- melt.data.table(res, id.vars="increment", variable.name = "measure", value.name = "rate")
 
 pltres[,
-  `community analysis` := factor(c(pc="persistence", snap="snapshot")[gsub("[FT]PR", "", measure)])
+  `community analysis` := factor(c(pc="persistence", snap="snapshot", snapAlt="altSnap", pcAlt="altpc")[gsub("[FT]PR", "", measure)])
 ][,
   outcome := factor(gsub(".+([FT]PR)","\\1", measure))
 ]
@@ -137,10 +187,13 @@ pltres[,
 ggplot(pltres) + theme_bw() + theme(panel.border=element_blank()) +
   aes(x=increment, y=rate, color=outcome, linetype=`community analysis`) + geom_line() +
   scale_color_manual(values=c(FPR='red',TPR='blue')) + labs(y="TPR & FPR") +
-  scale_linetype_manual(values=c(persistence="solid",snapshot="dashed"))
+  scale_linetype_manual(values=c(persistence="solid",snapshot="dashed", altpc="dotted", altSnap="dotdash")) +
+  ggtitle(sprintf("For %s %s %s", lf, pwr, pk))
 
 ggplot(covertTimeLine) + theme_bw() + aes(x=increment, y=factor(user_id), fill=outcome) +
-  geom_raster() + scale_fill_manual(values=c(absent="red",`present in large community`="yellow",`present in small community`="green"))
+  geom_raster() + scale_fill_manual(values=c(absent="red",`present in large community`="yellow",`present in small community`="green")) +
+  ggtitle(sprintf("For %s %s %s", lf, pwr, pk))
   
 ggplot(covertPersistence) + theme_bw() + aes(x=increment, y=factor(user_id), fill=outcome) +
-  geom_raster() + scale_fill_manual(values=c(absent="red",`present in large community`="yellow",`present in small community`="green"))
+  geom_raster() + scale_fill_manual(values=c(absent="red",`present in large community`="yellow",`present in small community`="green")) +
+  ggtitle(sprintf("For %s %s %s", lf, pwr, pk))
