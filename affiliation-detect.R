@@ -1,5 +1,9 @@
 rm(list=ls())
 
+require(data.table)
+require(ggplot2)
+require(reshape2)
+
 # args are (1) base background (for increment),
 # (2) base foreground (all)
 # (3) pc background (for increment)
@@ -36,13 +40,13 @@ rm(list=ls())
 #   compute # of non-covert members in small vs large comms
 #   compute TPR, FPR
 
-lf <- "mid"
-pwr <- "lo"
-pk <- "late"
-
 # lf <- "mid"
-# pwr <- "med"
-# pk <- "middle"
+# pwr <- "lo"
+# pk <- "late"
+
+lf <- "mid"
+pwr <- "med"
+pk <- "middle"
 
 foregroundSnapshots <- readRDS(sprintf("output/matched/%s/%s/%s/10/001-covert-0-base.rds",lf,pwr,pk))
 foregroundN <- 10
@@ -56,7 +60,7 @@ res <- data.table(increment=1:n,
 covertStates <- c(abs="absent",big="present in large community",lit="present in small community")
 
 bgcomp_user_ids <- readRDS("input/user.RData")[
-  (lifetime_main == "mid" & pwr_main == "lo" & peak_main == "late"), user_id
+  (lifetime_main == lf & pwr_main == pwr & peak_main == pk), user_id
   ]
 
 altfgN <- min(foregroundN, length(bgcomp_user_ids))
@@ -89,7 +93,7 @@ for (i in 1:n) {
   args <- c(
     sprintf("input/background-clusters/spin-glass/base-15-30/%03d.rds",i),
     sprintf("input/background-clusters/spin-glass/pc-15-30/%03d.rds",i),
-    sprintf("output/matched/mid/lo/late/10/001-covert-0/%03d.rds",i)
+    sprintf("output/matched/%s/%s/%s/10/001-covert-0/%03d.rds",lf,pwr,pk,i)
   )
 
   backgroundSnapshot <- readRDS(args[1])
@@ -170,11 +174,8 @@ for (i in 1:n) {
 snapAcc <- covertSnapAccumulation[,list(increment, cs=cumsum(count)), by=user_id]
 persAcc <- covertPersistAccumulation[,list(increment, cs=cumsum(count)), by=user_id]
 
-ggplot(snapAcc) + aes(y=cs,x=increment, color=factor(user_id)) + geom_step() + theme_bw()
-ggplot(persAcc) + aes(y=cs,x=increment, color=factor(user_id)) + geom_step() + theme_bw()
-
-require(ggplot2)
-require(reshape2)
+ggplot(snapAcc) + aes(y=cs, x=increment, color=factor(user_id)) + geom_step() + theme_bw()
+ggplot(persAcc) + aes(y=cs, x=increment, color=factor(user_id)) + geom_step() + theme_bw()
 
 pltres <- melt.data.table(res, id.vars="increment", variable.name = "measure", value.name = "rate")
 
@@ -184,16 +185,18 @@ pltres[,
   outcome := factor(gsub(".+([FT]PR)","\\1", measure))
 ]
 
-ggplot(pltres) + theme_bw() + theme(panel.border=element_blank()) +
+ggsave("mmm-prs.png", ggplot(pltres) + theme_bw() + theme(panel.border=element_blank()) +
   aes(x=increment, y=rate, color=outcome, linetype=`community analysis`) + geom_line() +
   scale_color_manual(values=c(FPR='red',TPR='blue')) + labs(y="TPR & FPR") +
   scale_linetype_manual(values=c(persistence="solid",snapshot="dashed", altpc="dotted", altSnap="dotdash")) +
-  ggtitle(sprintf("For %s %s %s", lf, pwr, pk))
+  ggtitle(sprintf("For %s %s %s", lf, pwr, pk)), width=7, height=4)
 
-ggplot(covertTimeLine) + theme_bw() + aes(x=increment, y=factor(user_id), fill=outcome) +
+ggsave("mmm-snap.png", ggplot(covertTimeLine) + theme_bw() + aes(x=increment, y=factor(user_id), fill=outcome) +
   geom_raster() + scale_fill_manual(values=c(absent="red",`present in large community`="yellow",`present in small community`="green")) +
-  ggtitle(sprintf("For %s %s %s", lf, pwr, pk))
+  ggtitle(sprintf("Snapshot Detection for %s %s %s", lf, pwr, pk)) + scale_x_continuous(expand=c(0,0)) +
+    labs(y="user id (<0 is covert)"), width=7, height=4)
   
-ggplot(covertPersistence) + theme_bw() + aes(x=increment, y=factor(user_id), fill=outcome) +
+ggsave("mmm-pers.png", ggplot(covertPersistence) + theme_bw() + aes(x=increment, y=factor(user_id), fill=outcome) +
   geom_raster() + scale_fill_manual(values=c(absent="red",`present in large community`="yellow",`present in small community`="green")) +
-  ggtitle(sprintf("For %s %s %s", lf, pwr, pk))
+  ggtitle(sprintf("Persistence Detection for %s %s %s", lf, pwr, pk)) + scale_x_continuous(expand=c(0,0)) +
+  labs(y="user id (<0 is covert)"), width=7, height=4)
