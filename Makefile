@@ -15,6 +15,7 @@ seq = $(call seq2,1,$(1))
 
 BPATH := $(INDIR)/$(WKDIR)
 DATAPATH := $(INDIR)/digest
+OUTSRC := $(INDIR)/simulate/covert
 
 $(BPATH): | $(INDIR)
 	mkdir -p $@
@@ -103,8 +104,8 @@ $(foreach d,$(COVERTDIMS),\
  $(foreach b,$(BG-FACTORIAL),\
 $(eval $(call detectingsecond,$(d),$(b)))\
 ))
-
-$(foreach d,$(COVERTDIMS),\
- $(foreach b,$(BG-FACTORIAL),\
-$(info $(call detectingsecond,$(d),$(b)))\
-))
+#
+# $(foreach d,$(COVERTDIMS),\
+#  $(foreach b,$(BG-FACTORIAL),\
+# $(info $(call detectingsecond,$(d),$(b)))\
+# ))
