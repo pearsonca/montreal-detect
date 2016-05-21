@@ -96,6 +96,12 @@ $(foreach d,$(COVERTDIMS),\
 $(eval $(call detecting,$(d),$(b)))\
 ))
 
+$(foreach d,high/hi/late/20,\
+ $(foreach b,15/15/censor,\
+$(info $(call detecting,$(d),$(b)))\
+))
+
+
 alldetectpbs: $(ALLDETECTPBS)
 
 .SECONDEXPANSION:
