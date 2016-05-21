@@ -61,13 +61,9 @@ endef
 ALLDETECTBASEPBS :=
 
 define detectingbase
-$(foreach i,$(SAMPS),$(call factorial2dir,$(1)/$(2)/$(i)))
-
 # % = sample
-$(BPATH)/$(1)/$(2)/%/base.rds: pre-spinglass-detect.R \
-$(DATAPATH)/raw/pairs.rds $(DATAPATH)/raw/location-lifetimes.rds \
-$(DATAPATH)/background/$(2)/base $(OUTSRC)/$(1)/%/cc.csv $(OUTSRC)/$(1)/%/cu.csv \
-| $(BPATH)/$(1)/$(2)/%
+$(BPATH)/$(1)/$(2)/%/base.rds: pre-spinglass-detect.R $(DATAPATH)/raw/pairs.rds $(DATAPATH)/raw/location-lifetimes.rds $(DATAPATH)/background/$(2)/base $(OUTSRC)/$(1)/%/cc.csv $(OUTSRC)/$(1)/%/cu.csv | $(BPATH)/$(1)/$(2)
+	mkdir -p $$(dir $$@)
 	@echo do something
 
 ALLDETECTBASEPBS += detect-$(1)-$(2).pbs
@@ -77,11 +73,9 @@ endef
 ALLDETECTPBS :=
 # # loop over covert dims, then analysis dims, then sample N
 define detecting # 1 dir for covert, 2 is dir for detection
-$(foreach i,$(SAMPS),$(call factorial2dir,$(1)/$(2)/$(i)))
-
 # % = sample
-$(BPATH)/$(1)/$(2)/%/acc.rds: pre-spinglass-score.R \
-$(DATAPATH)/background/$(dir $(2))base $(BPATH)/$(1)/$(dir $(2))%/base.rds
+$(BPATH)/$(1)/$(2)/%/acc.rds: pre-spinglass-score.R $(DATAPATH)/background/$(dir $(2))base $(BPATH)/$(1)/$(dir $(2))%/base.rds
+	mkdir -p $$(dir $$@)
 	@echo do something
 
 # need to get sample number in here somehow, but shouldn't be an issue
@@ -120,6 +114,8 @@ $(foreach d,high/hi/late/20,\
  $(foreach b,15/15/censor,\
 $(info $(call detecting,$(d),$(b)))\
 ))
+
+# ./input/detection/high/hi/late/20/15/15/%/base.rds: pre-spinglass-detect.R ./input/digest/raw/pairs.rds ./input/digest/raw/location-lifetimes.rds ./input/digest/background/15/15/base ./input/simulate/covert/high/hi/late/20/%/cc.csv ./input/simulate/covert/high/hi/late/20/%/cu.csv | ./input/detection/high/hi/late/20/15/15/%
 
 alldetectbasepbs: $(ALLDETECTBASEPBS)
 alldetectpbs: $(ALLDETECTPBS)
