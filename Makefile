@@ -62,14 +62,15 @@ define detecting # 1 dir for covert, 2 is dir for detection
 $(foreach i,$(SAMPS),$(call factorial2dir,$(1)/$(2)/$(i)))
 
 # % = sample
-$(BPATH)/$(1)/$(2)/%/base.rds: pre-spinglass-detect.R\
-$(DATAPATH)/raw/pairs.rds $(DATAPATH)/raw/location-lifetimes.rds\
-$(DATAPATH)/background/$(2)/base $(OUTSRC)/$(1)/%/cc.csv $(OUTSRC)/$(1)/%/cu.csv\
-| $(BPATH)/$(1)/$(2)/%/
+$(BPATH)/$(1)/$(2)/%/base.rds: pre-spinglass-detect.R \
+$(DATAPATH)/raw/pairs.rds $(DATAPATH)/raw/location-lifetimes.rds \
+$(DATAPATH)/background/$(2)/base $(OUTSRC)/$(1)/%/cc.csv $(OUTSRC)/$(1)/%/cu.csv \
+| $(BPATH)/$(1)/$(2)/%
 	@echo do something
 
 # % = sample
-$(BPATH)/$(1)/$(2)/%/acc.rds: pre-spinglass-score.R $(DATAPATH)/background/$(2)/base $(BPATH)/$(1)/$(2)/%/base.rds
+$(BPATH)/$(1)/$(2)/%/acc.rds: pre-spinglass-score.R \
+$(DATAPATH)/background/$(2)/base $(BPATH)/$(1)/$(2)/%/base.rds
 	@echo do something
 
 # need to get sample number in here somehow, but shouldn't be an issue
