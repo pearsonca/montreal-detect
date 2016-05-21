@@ -68,6 +68,8 @@ $(BPATH)/$(1)/$(2)/%/base.rds: pre-spinglass-detect.R $(DATAPATH)/raw/pairs.rds 
 
 ALLDETECTBASEPBS += detect-$(1)-$(2).pbs
 
+.PRECIOUS: $(BPATH)/$(1)/$(2)/%/base.rds
+
 endef
 
 ALLDETECTPBS :=
@@ -84,12 +86,12 @@ detect-$(subst /,-,$(1))-$(subst /,-,$(2)).pbs:
 
 ALLDETECTPBS += detect-$(1)-$(2).pbs
 
+.PRECIOUS: $(BPATH)/$(1)/$(2)/%/acc.rds
+
 endef
 
 define detectingsecond # % = sample/increment; 1 = covert dims, 2 = analysis dims
-$(BPATH)/$(1)/$(2)/%/pc.rds: spinglass-detect.R\
-$(DATAPATH)/background/$(2)/pc/$$$$(lastword $$$$(subst /,$(SPACE),$$$$*)).rds\
-$(BPATH)/$(1)/$(2)/$$$$(firstword $$$$(subst /,$(SPACE),$$$$*))/acc.rds | $(BPATH)/$(1)/$(2)/$$$$(firstword $$$$(subst /,$(SPACE),$$$$*))
+$(BPATH)/$(1)/$(2)/%/pc.rds: spinglass-detect.R $(DATAPATH)/background/$(2)/pc/$$$$(lastword $$$$(subst /,$(SPACE),$$$$*)).rds $(BPATH)/$(1)/$(2)/$$$$(firstword $$$$(subst /,$(SPACE),$$$$*))/acc.rds | $(BPATH)/$(1)/$(2)/$$$$(firstword $$$$(subst /,$(SPACE),$$$$*))
 	mkdir -p $$(dir $$@)
 	@echo do something
 
@@ -105,16 +107,6 @@ $(foreach d,$(COVERTDIMS),\
 $(eval $(call detecting,$(d),$(b)))\
 ))
 
-$(foreach d,high/hi/late/20,\
- $(foreach b,15/15,\
-$(info $(call detectingbase,$(d),$(b)))\
-))
-
-$(foreach d,high/hi/late/20,\
- $(foreach b,15/15/censor,\
-$(info $(call detecting,$(d),$(b)))\
-))
-
 # ./input/detection/high/hi/late/20/15/15/%/base.rds: pre-spinglass-detect.R ./input/digest/raw/pairs.rds ./input/digest/raw/location-lifetimes.rds ./input/digest/background/15/15/base ./input/simulate/covert/high/hi/late/20/%/cc.csv ./input/simulate/covert/high/hi/late/20/%/cu.csv | ./input/detection/high/hi/late/20/15/15/%
 
 alldetectbasepbs: $(ALLDETECTBASEPBS)
@@ -126,6 +118,12 @@ $(foreach d,$(COVERTDIMS),\
  $(foreach b,$(BG-FACTORIAL),\
 $(eval $(call detectingsecond,$(d),$(b)))\
 ))
+
+$(foreach d,high/hi/late/20,\
+ $(foreach b,15/15/censor,\
+$(info $(call detectingsecond,$(d),$(b)))\
+))
+
 #
 # $(foreach d,$(COVERTDIMS),\
 #  $(foreach b,$(BG-FACTORIAL),\
