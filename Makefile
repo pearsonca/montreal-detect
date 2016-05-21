@@ -91,7 +91,7 @@ ALLDETECTPBS += detect-$(1)-$(2).pbs
 endef
 
 define detectingsecond # % = sample/increment; 1 = covert dims, 2 = analysis dims
-$(BPATH)/$(1)/$(2)/%/pc.rds: spinglass-detect.R $(DATAPATH)/background/$(2)/pc/$$$$(lastword $$$$(subst /,$(SPACE),$$$$*)).rds $(BPATH)/$(1)/$(2)/$$$$(firstword $$$$(subst /,$(SPACE),$$$$*))/acc.rds | $(BPATH)/$(1)/$(2)/$$$$(firstword $$$$(subst /,$(SPACE),$$$$*))
+$(BPATH)/$(1)/$(2)/%/pc.rds: spinglass-detect.R $(DATAPATH)/background/$(2)/pc/$$$$(lastword $$$$(subst /,$(SPACE),$$$$*)).rds $(BPATH)/$(1)/$(2)/$$$$(firstword $$$$(subst /,$(SPACE),$$$$*))/acc.rds
 	mkdir -p $$(dir $$@)
 	@echo do something
 
