@@ -69,9 +69,12 @@ $(BPATH)/$(1)/$(2)/%/base.rds: pre-spinglass-detect.R $(DATAPATH)/raw/pairs.rds 
 	mkdir -p $$(dir $$@)
 	$(R) $$^ $(subst /,$(SPACE),$(2)) > $$@
 
-ALLDETECTBASEPBS += detect-$(1)-$(2).pbs
+base-$(subst /,-,$(1))-$(subst /,-,$(2)).pbs: base-detect.sh
+	./$$^ $(subst /,-,$(1))-$(subst /,-,$(2)) $(1)/$(2) $(SAMPN) > $$@
 
-.PRECIOUS: $(BPATH)/$(1)/$(2)/%/base.rds
+ALLDETECTBASEPBS += base-$(subst /,-,$(1))-$(subst /,-,$(2)).pbs
+
+.PRECIOUS: $(BPATH)/$(1)/$(2)/%/trim.rds $(BPATH)/$(1)/$(2)/%/base.rds
 
 endef
 
@@ -84,10 +87,10 @@ $(BPATH)/$(1)/$(2)/%/acc.rds: pre-spinglass-score.R $(DATAPATH)/background/$(dir
 	$(R) $$^ $(subst /,$(SPACE),$(2)) > $$@
 
 # need to get sample number in here somehow, but shouldn't be an issue
-detect-$(subst /,-,$(1))-$(subst /,-,$(2)).pbs:
-	@echo do something
+detect-$(subst /,-,$(1))-$(subst /,-,$(2)).pbs: acc-detect.sh
+	./$$^ $(subst /,-,$(1))-$(subst /,-,$(2)) $(1)/$(2) $(SAMPN) > $$@
 
-ALLDETECTPBS += detect-$(1)-$(2).pbs
+ALLDETECTPBS += detect-$(subst /,-,$(1))-$(subst /,-,$(2)).pbs
 
 .PRECIOUS: $(BPATH)/$(1)/$(2)/%/acc.rds
 
