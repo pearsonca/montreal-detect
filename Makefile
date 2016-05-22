@@ -2,6 +2,8 @@
 default:
 	@echo helloworld
 
+R := /usr/bin/env Rscript
+
 SIMPATH := ../scala-commsim
 DIGPATH := ../montreal-digest
 WKDIR := detection
@@ -62,11 +64,11 @@ ALLDETECTBASEPBS :=
 
 define detectingbase
 $(BPATH)/$(1)/$(2)/%/trim.rds: trim.R $(DATAPATH)/raw/pairs.rds $(DATAPATH)/raw/location-lifetimes.rds $(OUTSRC)/$(1)/%/cc.csv $(OUTSRC)/$(1)/%/cu.csv
+	mkdir -p $$(dir $$@)
 	$(R) $$^ $(subst /,$(SPACE),$(2)) > $$@
 
 # % = sample
 $(BPATH)/$(1)/$(2)/%/base.rds: pre-spinglass-detect.R $(DATAPATH)/raw/pairs.rds $(DATAPATH)/background/$(2)/base $(BPATH)/$(1)/$(2)/%/trim.rds | $(BPATH)/$(1)/$(2)
-	mkdir -p $$(dir $$@)
 	$(R) $$^ $(subst /,$(SPACE),$(2)) > $$@
 
 base-$(subst /,-,$(1))-$(subst /,-,$(2)).pbs: base-detect.sh
