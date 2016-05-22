@@ -65,7 +65,7 @@ $(BPATH)/$(1)/$(2)/%/trim.rds: trim.R $(DATAPATH)/raw/pairs.rds $(DATAPATH)/raw/
 	$(R) $$^ $(subst /,$(SPACE),$(2)) > $$@
 
 # % = sample
-$(BPATH)/$(1)/$(2)/%/base.rds: pre-spinglass-detect.R $(DATAPATH)/raw/pairs.rds $(DATAPATH)/background/$(2)/base $(OUTSRC)/$(1)/%/trim.rds | $(BPATH)/$(1)/$(2)
+$(BPATH)/$(1)/$(2)/%/base.rds: pre-spinglass-detect.R $(DATAPATH)/raw/pairs.rds $(DATAPATH)/background/$(2)/base $(BPATH)/$(1)/$(2)/%/trim.rds | $(BPATH)/$(1)/$(2)
 	mkdir -p $$(dir $$@)
 	$(R) $$^ $(subst /,$(SPACE),$(2)) > $$@
 
@@ -82,7 +82,7 @@ ALLDETECTPBS :=
 # # loop over covert dims, then analysis dims, then sample N
 define detecting # 1 dir for covert, 2 is dir for detection
 # % = sample
-$(BPATH)/$(1)/$(2)/%/acc.rds: pre-spinglass-score.R $(DATAPATH)/background/$(dir $(2))base $(BPATH)/$(1)/$(dir $(2))%/base.rds $(OUTSRC)/$(1)/%/trim.rds
+$(BPATH)/$(1)/$(2)/%/acc.rds: pre-spinglass-score.R $(DATAPATH)/background/$(dir $(2))base $(BPATH)/$(1)/$(dir $(2))%/base.rds $(BPATH)/$(1)/$(dir $(2))%/trim.rds
 	mkdir -p $$(dir $$@)
 	$(R) $$^ $(subst /,$(SPACE),$(2)) > $$@
 
@@ -102,15 +102,6 @@ $(BPATH)/$(1)/$(2)/%/pc.rds: spinglass-detect.R $(DATAPATH)/background/$(2)/pc/$
 	$(R) $$^ > $$@
 
 endef
-
-define trimcovert
-$(OUTSRC)/$(1)/%/trim.rds: trim.R $(DATAPATH)/raw/location-lifetimes.rds $(OUTSRC)/$(1)/%/cc.csv $(OUTSRC)/$(1)/%/cu.csv
-	$(R) $$^ > $$@
-endef
-
-$(foreach d,$(COVERTDIMS),\
-$(eval $(call trimcovert,$(d)))\
-)
 
 $(foreach d,$(COVERTDIMS),\
  $(foreach b,$(BG-BASE-FACTORIAL),\
