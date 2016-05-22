@@ -13,6 +13,6 @@ cat <<EOF
 
 module load gcc/5.2.0 R/3.2.2
 cd /scratch/lfs/cap10/montreal-detect
-tar=\$(printf '$(BPATH)/$(1)/$(2)/%03d/acc.rds' \$PBS_ARRAYID)
+tar=\$(printf 'input/detection/$2/%03d/acc.rds' \$PBS_ARRAYID)
 make \$tar
 EOF
