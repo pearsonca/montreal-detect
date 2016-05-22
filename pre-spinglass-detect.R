@@ -11,20 +11,13 @@ require(data.table)
 require(igraph)
 require(parallel)
 
-readForeground <- function(simpathroot) {
-  cc.dt <- setkey(
-    fread(paste0(sub("/$","",simpathroot),"-cc.csv"),
-          col.names = c("user.a","user.b","location_id","start","end","type")
-    ), location_id)
-  cu.dt <- fread(paste0(sub("/$","",simpathroot),"-cu.csv"), col.names = c("user.a","user.b","location_id","start","end","type"))
-  list(cc.dt=cc.dt, cu.dt=cu.dt)
-}
+source("../montreal-digest/buildStore.R")
 
-filelister <- function(srcpath) list.files(srcpath, full.names = T)
-
+loadBase <- function(srcpath) list.files(srcpath, pattern = "\\d{3}\.rds$", full.names = T)
+  
 parse_args <- function(argv = commandArgs(trailingOnly = T)) {
   parser <- optparse::OptionParser(
-    usage = "usage: %prog path/to/rawevents.rds path/locationslifetimes.rds path/to/precomputed path/to/simout path/to/target",
+    usage = "usage: %prog path/to/rawevents.rds path/locationslifetimes.rds path/to/precomputedbase path/to/cc path/to/cu",
     description = "compute snapshot communities + persistence scores for a simulation",
     option_list = list(
       optparse::make_option(
@@ -35,10 +28,10 @@ parse_args <- function(argv = commandArgs(trailingOnly = T)) {
   )
   req_pos <- list(
     raw.dt=readRDS,
-    location_lifetimes.dt=readRDS,
-    srcpath=identity,
-    foreground=readForeground,
-    outpath=identity
+    bgcomms=loadBase,
+    foreground.dt=readRDS,
+    intDays=as.integer,
+    winDays=as.integer
   )
   parsed <- optparse::parse_args(parser, argv, positional_arguments = length(req_pos))
   parsed$options$help <- NULL
@@ -46,8 +39,6 @@ parse_args <- function(argv = commandArgs(trailingOnly = T)) {
   if(result$verbose) print(result)
   result
 }
-
-source("../montreal-digest/buildStore.R")
 
 slice <- function(dt, low, high) relabeller(
   dt[start < high*24*3600 & low*24*3600 < end,
@@ -142,25 +133,11 @@ resolve <- function(
   rbindlist(thing)
 }
 
-with(parse_args(
+saveRDS(with(parse_args(
 #  c("input/raw-pairs.rds", "input/raw-location-lifetimes.rds", "input/background-clusters/spin-glass/base-15-30", "output/matched/mid/lo/late/10/001-covert-0", "output/matched/mid/lo/late/10/001-covert-0-base.rds")
 ),{
-  maxuid <- raw.dt[,max(user.a, user.b)]
-  bgcommunities <- filelister(srcpath)
-  interval <- as.integer(sub(".+-(\\d+)-\\d+$","\\1", srcpath))
-  window <- as.integer(sub(".+-\\d+-(\\d+)$","\\1", srcpath))
-  
-  trimforegroundcc.dt <- location_lifetimes.dt[foreground$cc.dt][
-    end > arrive & start < depart,
-    list(user.a, user.b, location_id, start, end, type)
-  ]
-  
-  foreground.dt <- setcolorder(rbind(foreground$cu.dt, trimforegroundcc.dt)[,
-      list(user.a, user.b, start, end)
-    ], c("user.a", "user.b", "start", "end")
-  )
-  
-  temp <- rbind(foreground.dt, raw.dt)
+
+  temp <- rbind(foreground.dt[,-"increment",with=F], raw.dt)
   temp[
     user.b < user.a,
     `:=`(user.b = user.a, user.a = user.b)
@@ -168,7 +145,5 @@ with(parse_args(
   
   ref.dt <- setkey(temp[user.a != user.b], start, end)
   
-  perturbedCommunities <- resolve(ref.dt, interval, window, bgcommunities)
-  
-  saveRDS(perturbedCommunities, outpath)
-})
+  resolve(ref.dt, intDays, winDays, bgcomms)
+}), pipe("cat","wb"))

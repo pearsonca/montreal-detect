@@ -61,10 +61,13 @@ endef
 ALLDETECTBASEPBS :=
 
 define detectingbase
+$(BPATH)/$(1)/$(2)/%/trim.rds: trim.R $(DATAPATH)/raw/pairs.rds $(DATAPATH)/raw/location-lifetimes.rds $(OUTSRC)/$(1)/%/cc.csv $(OUTSRC)/$(1)/%/cu.csv
+	$(R) $$^ $(subst /,$(SPACE),$(2)) > $$@
+
 # % = sample
-$(BPATH)/$(1)/$(2)/%/base.rds: pre-spinglass-detect.R $(DATAPATH)/raw/pairs.rds $(DATAPATH)/raw/location-lifetimes.rds $(DATAPATH)/background/$(2)/base $(OUTSRC)/$(1)/%/cc.csv $(OUTSRC)/$(1)/%/cu.csv | $(BPATH)/$(1)/$(2)
+$(BPATH)/$(1)/$(2)/%/base.rds: pre-spinglass-detect.R $(DATAPATH)/raw/pairs.rds $(DATAPATH)/background/$(2)/base $(OUTSRC)/$(1)/%/trim.rds | $(BPATH)/$(1)/$(2)
 	mkdir -p $$(dir $$@)
-	@echo do something
+	$(R) $$^ $(subst /,$(SPACE),$(2)) > $$@
 
 ALLDETECTBASEPBS += detect-$(1)-$(2).pbs
 
@@ -76,9 +79,9 @@ ALLDETECTPBS :=
 # # loop over covert dims, then analysis dims, then sample N
 define detecting # 1 dir for covert, 2 is dir for detection
 # % = sample
-$(BPATH)/$(1)/$(2)/%/acc.rds: pre-spinglass-score.R $(DATAPATH)/background/$(dir $(2))base $(BPATH)/$(1)/$(dir $(2))%/base.rds
+$(BPATH)/$(1)/$(2)/%/acc.rds: pre-spinglass-score.R $(DATAPATH)/background/$(dir $(2))base $(BPATH)/$(1)/$(dir $(2))%/base.rds $(OUTSRC)/$(1)/%/trim.rds
 	mkdir -p $$(dir $$@)
-	@echo do something
+	$(R) $$^ $(subst /,$(SPACE),$(2)) > $$@
 
 # need to get sample number in here somehow, but shouldn't be an issue
 detect-$(subst /,-,$(1))-$(subst /,-,$(2)).pbs:
@@ -93,9 +96,18 @@ endef
 define detectingsecond # % = sample/increment; 1 = covert dims, 2 = analysis dims
 $(BPATH)/$(1)/$(2)/%/pc.rds: spinglass-detect.R $(DATAPATH)/background/$(2)/pc/$$$$(lastword $$$$(subst /,$(SPACE),$$$$*)).rds $(BPATH)/$(1)/$(2)/$$$$(firstword $$$$(subst /,$(SPACE),$$$$*))/acc.rds
 	mkdir -p $$(dir $$@)
-	@echo do something
+	$(R) $$^ > $$@
 
 endef
+
+define trimcovert
+$(OUTSRC)/$(1)/%/trim.rds: trim.R $(DATAPATH)/raw/location-lifetimes.rds $(OUTSRC)/$(1)/%/cc.csv $(OUTSRC)/$(1)/%/cu.csv
+	$(R) $$^ > $$@
+endef
+
+$(foreach d,$(COVERTDIMS),\
+$(eval $(call trimcovert,$(d)))\
+)
 
 $(foreach d,$(COVERTDIMS),\
  $(foreach b,$(BG-BASE-FACTORIAL),\
@@ -119,10 +131,10 @@ $(foreach d,$(COVERTDIMS),\
 $(eval $(call detectingsecond,$(d),$(b)))\
 ))
 
-$(foreach d,high/hi/late/20,\
- $(foreach b,15/15/censor,\
-$(info $(call detectingsecond,$(d),$(b)))\
-))
+# $(foreach d,high/hi/late/20,\
+#  $(foreach b,15/15/censor,\
+# $(info $(call detectingsecond,$(d),$(b)))\
+# ))
 
 #
 # $(foreach d,$(COVERTDIMS),\
