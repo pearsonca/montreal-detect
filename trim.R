@@ -19,7 +19,7 @@ readFore <- function(wh) {
     user.b < user.a,
     `:=`(user.b = user.a, user.a = user.b)
   ]
-  res
+  setkey(res, location_id)
 }
 
 parse_args <- function(argv = commandArgs(trailingOnly = T)) {
@@ -52,9 +52,8 @@ slice <- function(dt, low, high) data.table::copy(
   dt[start < high*24*3600 & low*24*3600 < end]
 )
 
-
 saveRDS(with(parse_args(
-#  c("input/raw-location-lifetimes.rds"
+# c("input/digest/raw/pairs.rds", "input/digest/raw/location-lifetimes.rds", "input/simulate/covert/high/hi/early/10/010/cc.csv", "input/simulate/covert/high/hi/early/10/010/cu.csv", "15", "15")
 ),{
 
   trimforegroundcc.dt <- location_lifetimes.dt[cc.dt][
@@ -73,6 +72,7 @@ saveRDS(with(parse_args(
   st <- raw.dt[1, floor(start/60/60/24)]
   mx <- raw.dt[1, ceiling((ceiling(end/60/60/24) - floor(start/60/60/24))/intDays)]
   setkey(rbindlist(lapply(1:mx, function(inc) {
-    slice(res, st + inc*intDays-winDays, st + inc*intDays)[, increment := inc ]
+    ret <- slice(res, st + inc*intDays-winDays, st + inc*intDays)[, increment := inc ]
+    ret
   })), start, end)
 }), pipe("cat","wb"))
