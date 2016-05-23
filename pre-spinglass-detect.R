@@ -46,7 +46,7 @@ slice <- function(dt, low, high) relabeller(
      by=list(user.a, user.b)]
 )
 
-emptycomp <- data.table(new_user_id=integer(0), community=integer(0))
+emptycomp <- data.table(new_user_id=integer(), community=integer())
 emptygraph <- data.table(user_id=integer(), community=integer())
 
 decompose <- function(allnewusers, comps, gg, completeCommunities, referenceCommunities, mp) {
@@ -77,7 +77,7 @@ largeCommunities <- function(inBigs, allnewusers, comps, gg, referenceCommunitie
   res <- emptycomp
   while (length(candidates)) {
     tar <- candidates[1]
-    found <- targettedGraphPartitionOne(tar, gg, comps)
+    found <- unique(c(targettedGraphPartitionOne(tar, gg, comps), tar))
     others <- setkey(mp[
       setdiff(found, tar),
       list(user_id)
