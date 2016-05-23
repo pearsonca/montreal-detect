@@ -13,7 +13,7 @@ require(parallel)
 
 source("../montreal-digest/buildStore.R")
 
-loadBase <- function(srcpath) list.files(srcpath, pattern = "[:digit:]{3}\.rds$", full.names = T)
+loadBase <- function(srcpath) list.files(srcpath, pattern = "[:digit:]{3}.rds$", full.names = T)
   
 parse_args <- function(argv = commandArgs(trailingOnly = T)) {
   parser <- optparse::OptionParser(
