@@ -13,7 +13,7 @@ require(parallel)
 
 source("../montreal-digest/buildStore.R")
 
-loadBase <- function(srcpath) list.files(srcpath, pattern = "[:digit:]{3}.rds$", full.names = T)
+loadBase <- function(srcpath) list.files(srcpath, pattern='\\d{3}\\.rds$', full.names = T)
   
 parse_args <- function(argv = commandArgs(trailingOnly = T)) {
   parser <- optparse::OptionParser(
@@ -134,7 +134,7 @@ resolve <- function(
 }
 
 saveRDS(with(parse_args(
-#  c("input/raw-pairs.rds", "input/raw-location-lifetimes.rds", "input/background-clusters/spin-glass/base-15-30", "output/matched/mid/lo/late/10/001-covert-0", "output/matched/mid/lo/late/10/001-covert-0-base.rds")
+# c("input/digest/raw/pairs.rds", "input/digest/background/15/15/base", "input/detection/high/hi/early/10/15/15/010/trim.rds", "15", "15")
 ),{
 
   temp <- rbind(foreground.dt[,-"increment",with=F], raw.dt)

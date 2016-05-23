@@ -69,8 +69,8 @@ saveRDS(with(parse_args(
   res <- foreground.dt[user.a != user.b]
   
   ## need to assign increment based on raw.dt, intDays, winDays
-  st <- raw.dt[1, floor(start/60/60/24)]
-  mx <- raw.dt[1, ceiling((ceiling(end/60/60/24) - floor(start/60/60/24))/intDays)]
+  st <- raw.dt[, floor(min(start)/60/60/24)]
+  mx <- raw.dt[, ceiling((ceiling(max(end)/60/60/24) - st)/intDays)]
   setkey(rbindlist(lapply(1:mx, function(inc) {
     ret <- slice(res, st + inc*intDays-winDays, st + inc*intDays)[, increment := inc ]
     ret
