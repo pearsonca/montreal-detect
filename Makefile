@@ -120,6 +120,12 @@ $(eval $(call detecting,$(d),$(b)))\
 alldetectbasepbs: $(ALLDETECTBASEPBS)
 alldetectpbs: $(ALLDETECTPBS)
 
+.PHONY: submitsomebase
+
+submitsomebase: alldetectbasepbs
+	for f in $(wordlist $(s),$(e),$(ALLDETECTBASEPBS)); do qsub $f; done;
+
+
 .SECONDEXPANSION:
 
 $(foreach d,$(COVERTDIMS),\
