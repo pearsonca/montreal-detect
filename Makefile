@@ -123,7 +123,7 @@ alldetectpbs: $(ALLDETECTPBS)
 .PHONY: submitsomebase
 
 submitsomebase: alldetectbasepbs
-	for f in $(wordlist $(s),$(e),$(ALLDETECTBASEPBS)); do qsub $f; done;
+	for f in $(wordlist $(s),$(e),$(ALLDETECTBASEPBS)); do qsub $$f; done;
 
 
 .SECONDEXPANSION:
