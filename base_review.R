@@ -23,7 +23,8 @@ fgs <- list.files(sampDir, pattern = "base.rds", full.names = T, recursive = T)
 saveRDS(rbindlist(lapply(fgs, function(fn) {
   # parse out covert size from fn
   samp <- as.integer(sub(".+/(\\d+)/base.rds", "\\1", fn))
-  foreground <- readRDS(fn)
+  foreground <- try(readRDS(fn))
+  if (class(foreground)=="try-error") stop(fn)
 
   counts <- rbind(background, foreground)[,
     list(total=.N, bg=sum(user_id >= 0), fg=sum(user_id < 0)),
