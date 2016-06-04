@@ -71,6 +71,9 @@ $(BPATH)/$(1)/$(2)/%/trim.rds: trim.R $(DATAPATH)/raw/pairs.rds $(DATAPATH)/raw/
 $(BPATH)/$(1)/$(2)/%/base.rds: pre-spinglass-detect.R $(DATAPATH)/raw/pairs.rds $(DATAPATH)/background/$(2)/base $(BPATH)/$(1)/$(2)/%/trim.rds | $(BPATH)/$(1)/$(2)
 	$(R) $$^ $(subst /,$(SPACE),$(2)) > $$@
 
+$(BPATH)/$(1)/$(2)/base_review.png: base_review.R $(wildcard $(BPATH)/$(1)/$(2)/*/base.rds)
+	$(R) $$< $(BPATH)/$(1)/$(2) $(DATAPATH)/background/$(2)/base $$@ # cannot use redirect: ggsave needs to know format
+
 base-$(subst /,-,$(1))-$(subst /,-,$(2)).pbs: base-detect.sh
 	./$$^ $(subst /,-,$(1))-$(subst /,-,$(2)) $(1)/$(2) $(SAMPN) > $$@
 
