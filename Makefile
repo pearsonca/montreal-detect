@@ -62,6 +62,8 @@ endef
 
 ALLDETECTBASEPBS :=
 
+SNAPBASEPBS :=
+
 define detectingbase
 $(BPATH)/$(1)/$(2)/%/trim.rds: trim.R $(DATAPATH)/raw/pairs.rds $(DATAPATH)/raw/location-lifetimes.rds $(OUTSRC)/$(1)/%/cc.csv $(OUTSRC)/$(1)/%/cu.csv
 	mkdir -p $$(dir $$@)
@@ -71,8 +73,13 @@ $(BPATH)/$(1)/$(2)/%/trim.rds: trim.R $(DATAPATH)/raw/pairs.rds $(DATAPATH)/raw/
 $(BPATH)/$(1)/$(2)/%/base.rds: pre-spinglass-detect.R $(DATAPATH)/raw/pairs.rds $(DATAPATH)/background/$(2)/base $(BPATH)/$(1)/$(2)/%/trim.rds | $(BPATH)/$(1)/$(2)
 	$(R) $$^ $(subst /,$(SPACE),$(2)) > $$@
 
-$(BPATH)/$(1)/$(2)/base_review.png: base_review.R $(wildcard $(BPATH)/$(1)/$(2)/*/base.rds)
-	$(R) $$< $(BPATH)/$(1)/$(2) $(DATAPATH)/background/$(2)/base $$@ # cannot use redirect: ggsave needs to know format
+$(BPATH)/$(1)/$(2)/snapFTPR.rds: base_review.R $(wildcard $(BPATH)/$(1)/$(2)/*/base.rds)
+	$(R) $$< $(BPATH)/$(1)/$(2) $(DATAPATH)/background/$(2)/base > $$@
+
+snaps-$(subst /,-,$(1))-$(subst /,-,$(2)).pbs: snap-review.sh
+	./$$^ $(subst /,-,$(1))-$(subst /,-,$(2)) $(1)/$(2) > $$@
+
+SNAPBASEPBS += snaps-$(subst /,-,$(1))-$(subst /,-,$(2))
 
 base-$(subst /,-,$(1))-$(subst /,-,$(2)).pbs: base-detect.sh
 	./$$^ $(subst /,-,$(1))-$(subst /,-,$(2)) $(1)/$(2) $(SAMPN) > $$@
@@ -121,6 +128,7 @@ $(eval $(call detecting,$(d),$(b)))\
 # ./input/detection/high/hi/late/20/15/15/%/base.rds: pre-spinglass-detect.R ./input/digest/raw/pairs.rds ./input/digest/raw/location-lifetimes.rds ./input/digest/background/15/15/base ./input/simulate/covert/high/hi/late/20/%/cc.csv ./input/simulate/covert/high/hi/late/20/%/cu.csv | ./input/detection/high/hi/late/20/15/15/%
 
 alldetectbasepbs: $(ALLDETECTBASEPBS)
+allsnapsreviewpbs: $(SNAPBASEPBS)
 alldetectpbs: $(ALLDETECTPBS)
 
 .PHONY: submitsomebase

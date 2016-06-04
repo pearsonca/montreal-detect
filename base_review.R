@@ -8,19 +8,21 @@ sampDir <- args[1]
 backgroundDir <- args[2]
 tar <- args[3]
 
+foregroundN <- as.integer(sub(".+/(\\d+)/\\d+/\\d+$","\\1",sampDir))
+
 bgs <- list.files(backgroundDir, pattern="\\d{3}.rds", full.names = T)
 background <- rbindlist(lapply(bgs, function(fn) {
-  inc <- as.integer(sub("(\\d+)", "\\1", fn))
+  inc <- as.integer(sub(".+/(\\d+)\\.rds", "\\1", fn))
   res <- readRDS(fn)
   res[, increment := inc ]
   res
 }))
 
-fgs <- list.files(sampDir, pattern = "\\d{3}/base.rds", full.names = T)
+fgs <- list.files(sampDir, pattern = "base.rds", full.names = T, recursive = T)
 
-plotsrc <- rbindlist(lapply(fgs, function(fn) {
+saveRDS(rbindlist(lapply(fgs, function(fn) {
   # parse out covert size from fn
-  samp <- as.integer(sub("(\\d+)", "\\1", fn))
+  samp <- as.integer(sub(".+/(\\d+)/base.rds", "\\1", fn))
   foreground <- readRDS(fn)
 
   counts <- rbind(background, foreground)[,
@@ -28,20 +30,19 @@ plotsrc <- rbindlist(lapply(fgs, function(fn) {
     keyby=list(community, increment)
   ]
 
-  snap <- counts[foreground][user_id < 0]
-  
-  jn <- snap[,
-    list(found = total <= 30),
-    keyby=list(increment, user_id)
-  ]
+#   snap <- counts[foreground][user_id < 0]
+#   
+#   jn <- snap[,
+#     list(found = total <= 30),
+#     keyby=list(increment, user_id)
+#   ]
   
   res <- counts[, list(
     snapFPR = sum(bg[total <= 30])/max(sum(bg)),
-    snapTPR = sum(fg[total <= 30])
+    snapTPR = sum(fg[total <= 30])/foregroundN
   ), keyby=increment]
-
+  
+  res[, sample_id := samp ]
   
   res
-}))
-
-ggsave(tar)
+})), pipe("cat","wb"))
