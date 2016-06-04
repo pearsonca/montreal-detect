@@ -79,7 +79,7 @@ $(BPATH)/$(1)/$(2)/snapFTPR.rds: base_review.R $(wildcard $(BPATH)/$(1)/$(2)/*/b
 snaps-$(subst /,-,$(1))-$(subst /,-,$(2)).pbs: snap-review.sh
 	./$$^ $(subst /,-,$(1))-$(subst /,-,$(2)) $(1)/$(2) > $$@
 
-SNAPBASEPBS += snaps-$(subst /,-,$(1))-$(subst /,-,$(2))
+SNAPBASEPBS += snaps-$(subst /,-,$(1))-$(subst /,-,$(2)).pbs
 
 base-$(subst /,-,$(1))-$(subst /,-,$(2)).pbs: base-detect.sh
 	./$$^ $(subst /,-,$(1))-$(subst /,-,$(2)) $(1)/$(2) $(SAMPN) > $$@
