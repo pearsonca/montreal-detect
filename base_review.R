@@ -47,3 +47,5 @@ saveRDS(rbindlist(lapply(fgs, function(fn) {
   
   res
 })), pipe("cat","wb"))
+
+cat(warnings(), file=stderr())
