@@ -24,7 +24,7 @@ saveRDS(rbindlist(lapply(fgs, function(fn) {
   # parse out covert size from fn
   samp <- as.integer(sub(".+/(\\d+)/base.rds", "\\1", fn))
   foreground <- try(readRDS(fn))
-  if (class(foreground)=="try-error") stop(fn)
+  if (class(foreground)[1]=="try-error") stop(fn)
 
   counts <- rbind(background, foreground)[,
     list(total=.N, bg=sum(user_id >= 0), fg=sum(user_id < 0)),
