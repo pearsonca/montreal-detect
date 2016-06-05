@@ -48,4 +48,4 @@ saveRDS(rbindlist(lapply(fgs, function(fn) {
   res
 })), pipe("cat","wb"))
 
-cat(warnings(), file=stderr())
+do.call(c(warnings(), file=stderr()))
