@@ -48,4 +48,5 @@ saveRDS(rbindlist(lapply(fgs, function(fn) {
   res
 })), pipe("cat","wb"))
 
-do.call(c(warnings(), file=stderr()))
+wrn <- warnings()
+cat(paste(names(wrn), unlist(wrn), collapse = "\n"), file=stderr())
