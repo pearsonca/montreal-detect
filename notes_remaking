@@ -1,0 +1,17 @@
+input/detection/high/hi/early/10/15/30/snapFTPR.rds
+input/detection/high/hi/late/20/15/30/snapFTPR.rds
+input/detection/high/lo/late/10/30/30/snapFTPR.rds
+input/detection/high/lo/middle/20/15/30/snapFTPR.rds
+input/detection/high/med/middle/20/15/30/snapFTPR.rds
+input/detection/low/hi/late/20/15/30/snapFTPR.rds
+input/detection/high/hi/early/20/15/30/snapFTPR.rds
+input/detection/high/hi/middle/10/15/30/snapFTPR.rds
+input/detection/high/lo/late/20/15/30/snapFTPR.rds
+input/detection/high/med/late/20/15/30/snapFTPR.rds
+input/detection/low/hi/early/10/15/30/snapFTPR.rds
+input/detection/low/lo/early/20/15/30/snapFTPR.rds
+input/detection/high/hi/early/5/15/30/snapFTPR.rds
+input/detection/high/lo/late/10/15/30/snapFTPR.rds
+input/detection/high/lo/late/5/15/30/snapFTPR.rds
+input/detection/high/med/middle/10/15/30/snapFTPR.rds
+input/detection/low/hi/early/20/15/30/snapFTPR.rds
