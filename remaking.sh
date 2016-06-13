@@ -21,11 +21,12 @@ func() {
 
 func
 
-while $testval
+while [ $testval != 0 ]
 do
 rm $tar
 basetar=`echo $resval | grep -Po ": \./input/.+/base\.rds"`
 basetar=${basetar:4}
+rm $basetar
 make $basetar
 func
 done
