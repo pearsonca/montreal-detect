@@ -10,6 +10,8 @@
 #PBS -l pmem=2gb
 #PBS -t 1-17
 
+cd /lfs/scratch/cap10/montreal-detect
+
 tar=`cat notes_remaking | tail -n +$PBS_ARRAYID | head -1`
 
 rm $tar
