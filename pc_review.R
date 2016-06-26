@@ -1,27 +1,32 @@
 # review the base detection for some combination of params, across samples
+rm(list=ls())
 
 require(ggplot2)
 require(data.table)
 
 args <- commandArgs(trailingOnly = T)
+# args <- c("input/detection/high/hi/early/10/15/30/censor","input/digest/background/15/30/censor/pc")
 sampDir <- args[1]
 backgroundDir <- args[2]
 
-foregroundN <- as.integer(sub(".+/(\\d+)/\\d+/\\d+$","\\1",sampDir))
+foregroundN <- as.integer(sub(".+/(\\d+)/\\d+/\\d+/.+$","\\1",sampDir))
+
+emptypc <- data.table(user_id=integer(), community=integer())
 
 bgs <- list.files(backgroundDir, pattern="\\d{3}.rds", full.names = T)
 background <- rbindlist(lapply(bgs, function(fn) {
   inc <- as.integer(sub(".+/(\\d+)\\.rds", "\\1", fn))
   res <- readRDS(fn)
+  if(!dim(res)[2]) res <- emptypc
   res[, increment := inc ]
   res
 }))
 
-fgs <- list.files(sampDir, pattern = "base.rds", full.names = T, recursive = T)
+fgs <- list.files(sampDir, pattern = "pc.rds", full.names = T, recursive = T)
 
 saveRDS(rbindlist(lapply(fgs, function(fn) {
   # parse out covert size from fn
-  samp <- as.integer(sub(".+/(\\d+)/base.rds", "\\1", fn))
+  samp <- as.integer(sub(".+/(\\d+)/pc.rds", "\\1", fn))
   foreground <- try(readRDS(fn))
   if (class(foreground)[1]=="try-error") stop(fn)
 

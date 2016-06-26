@@ -13,7 +13,7 @@ require(parallel)
 
 filelister <- function(srcpath) list.files(srcpath, full.names = T)
 
-loadBase <- function(srcpath) list.files(srcpath, pattern = "\\d{3}\.rds$", full.names = T)
+loadBase <- function(srcpath) list.files(srcpath, pattern = "\\d{3}\\.rds$", full.names = T)
 
 readFore <- function(wh) {
   res <- fread(wh, col.names = c("user.a","user.b","location_id","start","end","type"))

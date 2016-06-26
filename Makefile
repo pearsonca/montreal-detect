@@ -106,12 +106,13 @@ ALLDETECTPBS += detect-$(subst /,-,$(1))-$(subst /,-,$(2)).pbs
 
 .PRECIOUS: $(BPATH)/$(1)/$(2)/%/acc.rds
 
+$(BPATH)/$(1)/$(2)/%/pc.rds: spinglass-detect.R $(DATAPATH)/background/$(2)/acc $(DATAPATH)/background/$(2)/pc $(BPATH)/$(1)/$(2)/%/acc.rds
+	mkdir -p $$(dir $$@)
+	$(R) $$^ > $$@
+
 endef
 
 define detectingsecond # % = sample/increment; 1 = covert dims, 2 = analysis dims
-$(BPATH)/$(1)/$(2)/%/pc.rds: spinglass-detect.R $(DATAPATH)/background/$(2)/pc/$$$$(lastword $$$$(subst /,$(SPACE),$$$$*)).rds $(BPATH)/$(1)/$(2)/$$$$(firstword $$$$(subst /,$(SPACE),$$$$*))/acc.rds
-	mkdir -p $$(dir $$@)
-	$(R) $$^ > $$@
 
 endef
 
@@ -136,13 +137,13 @@ alldetectpbs: $(ALLDETECTPBS)
 submitsomebase: alldetectbasepbs
 	for f in $(wordlist $(s),$(e),$(ALLDETECTBASEPBS)); do qsub $$f; done;
 
+# $(foreach d,$(COVERTDIMS),\
+#  $(foreach b,$(BG-FACTORIAL),\
+# $(eval $(call detectingsecond,$(d),$(b)))\
+# ))
 
-.SECONDEXPANSION:
 
-$(foreach d,$(COVERTDIMS),\
- $(foreach b,$(BG-FACTORIAL),\
-$(eval $(call detectingsecond,$(d),$(b)))\
-))
+#.SECONDEXPANSION:
 
 # $(foreach d,high/hi/late/20,\
 #  $(foreach b,15/15/censor,\

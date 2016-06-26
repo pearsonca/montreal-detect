@@ -22,7 +22,7 @@ decompose <- function(allnewusers, comps, gg, completeCommunities, referenceComm
 }
 
 smallComponents <- function(inSmalls, allnewusers, comps, referenceCommunities, mp, verbose = F) if (!sum(inSmalls)) {
-  if (verbose) cat("no small communities\n")
+  if (verbose) cat("no small communities\n", file=stderr())
   emptycomp
 } else {
   consensusComms <- sapply(allnewusers[inSmalls], function(newMember){
@@ -37,18 +37,17 @@ smallComponents <- function(inSmalls, allnewusers, comps, referenceCommunities, 
 }
 
 largeCommunities <- function(inBigs, allnewusers, comps, gg, referenceCommunities, mp, base, verbose = F) if (!sum(inBigs)) {
-    if (verbose) cat("no big communities\n")
+    if (verbose) cat("no big communities\n", file=stderr())
     base 
   } else {
   candidates <- allnewusers[inBigs]
   res <- emptycomp
   while (length(candidates)) {
     tar <- candidates[1]
-    if (verbose) cat("partioning for",tar,"\n")
+    if (verbose) cat("partioning for", tar, "\n", file=stderr())
     found <- unique(c(targettedGraphPartitionOne(tar, gg, comps, verbose), tar))
     if (verbose) {
-      cat("found:\n")
-      print(found)
+      cat("found:\n", found, file=stderr())
     }
     others <- setkey(mp[
       setdiff(found, tar),
@@ -61,8 +60,7 @@ largeCommunities <- function(inBigs, allnewusers, comps, gg, referenceCommunitie
     res <- rbind(res, data.table(new_user_id = known, community = fndcomm))
     candidates <- setdiff(candidates, found)
     if (verbose) {
-      cat("remaining...\n")
-      print(candidates)
+      cat("remaining...\n", candidates, file=stderr())
     }
   }
   rbind(base, res)
@@ -91,11 +89,14 @@ graphPartition <- function(res, mp, referenceCommunities, ulim=60, verbose=F) {
 
 perturbedPersistenceComms <- function(accPert, bgacc, bgpc, verbose) {
   if (dim(accPert[score > 1])[1]) {
-    base.dt <- rbind(accPert[score > 1], bgacc[score > 1])
+    base.dt <- rbind(accPert[score > 1, score, by=list(user.a, user.b)], bgacc[score > 1, score, by=list(user.a, user.b)])
     ret <- with(relabeller(base.dt), graphPartition(res, mp, bgpc, verbose))
     ret
   } else emptygraph
 }
+
+listPC <- function(srcpath) list.files(srcpath, pattern = "\\d{3}\\.rds$", full.names = T)
+listACC <- function(srcpath) list.files(srcpath, pattern = "\\d{3}\\.rds$", full.names = T)
 
 parse_args <- function(argv = commandArgs(trailingOnly = T)) {
   parser <- optparse::OptionParser(
@@ -109,31 +110,43 @@ parse_args <- function(argv = commandArgs(trailingOnly = T)) {
     )
   )
   req_pos <- list(
-    agg.dt=readRDS,
-    pc.dt=readRDS,
-    pertpath=identity
+    bgaccs=listACC,
+    bgpccommunities=listPC,
+    acc.dt=readRDS
   )
   parsed <- optparse::parse_args(parser, argv, positional_arguments = length(req_pos))
   parsed$options$help <- NULL
   result <- c(mapply(function(f,c) f(c), req_pos, parsed$args, SIMPLIFY = F), parsed$options)
-  if(result$verbose) print(result)
+  # if(result$verbose) cat(format(result), file=stderr())
   result
 }
 
-resolve <- function(agg.dt, pc.dt, pertpath, verbose) {
-  foregroundAgg <- readRDS(pertpath)
-  newfile <- sub("-acc.rds",".rds", pertpath, fixed = T)
-  saveRDS(
-    perturbedPersistenceComms(foregroundAgg, agg.dt, pc.dt, verbose),
-    newfile
-  )
-  if (verbose) cat(sprintf("finishing %s\n", newfile))
+resolve <- function(bgaccs, bgpccommunities, acc.dt, verbose) {
+    n <- min(length(bgaccs), length(bgpccommunities), 65)
+    ret <- rbindlist(mapply(function(bgaccincfn, bgpcincfn, accinc){
+      agg.dt <- readRDS(bgaccincfn)
+      pc.dt <- readRDS(bgpcincfn)
+      sl <- acc.dt[increment == accinc]
+      res <- perturbedPersistenceComms(sl, agg.dt, pc.dt, verbose)
+      res[, increment := accinc ]
+      if(verbose) cat("finishing increment",accinc,"; size ",dim(res),"\n",file=stderr())
+      res
+    }, bgaccincfn=bgaccs[1:n], bgpcincfn=bgpccommunities[1:n], accinc=1:n, SIMPLIFY = F))
+    # browser()
+    ret
 }
 
 #for (i in 1:135) {
-do.call(resolve, parse_args(
-#  c(sprintf("input/background-clusters/spin-glass/agg-15-30/%03d.rds",i),sprintf("input/background-clusters/spin-glass/pc-15-30/%03d.rds",i),sprintf("output/matched/mid/lo/late/10/001-covert-0/%03d-acc.rds",i), "-v")
-))
+# args <- c("input/digest/background/15/30/censor/acc", "input/digest/background/15/30/censor/pc", "input/detection/high/hi/early/10/15/30/censor/010/acc.rds","-v")
+saveRDS(
+  with(
+    parse_args(
+#      args #c(sprintf("input/background-clusters/spin-glass/agg-15-30/%03d.rds",i),sprintf("input/background-clusters/spin-glass/pc-15-30/%03d.rds",i),sprintf("output/matched/mid/lo/late/10/001-covert-0/%03d-acc.rds",i), "-v")
+    ),
+    resolve(bgaccs, bgpccommunities, acc.dt, verbose)
+  ),
+  pipe("cat","wb")
+)
 #}
 #   args <- c(
 #     sprintf("input/background-clusters/spin-glass/agg-15-30/%03d.rds",i),
