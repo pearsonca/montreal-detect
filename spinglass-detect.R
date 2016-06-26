@@ -87,11 +87,13 @@ graphPartition <- function(res, mp, referenceCommunities, ulim=60, verbose=F) {
   originalUserIDs(base, mp)
 }
 
-perturbedPersistenceComms <- function(accPert, bgacc, bgpc, verbose) {
-  if (dim(accPert[score > 1])[1]) {
+perturbedPersistenceComms <- function(accPert, bgacc, bgpc, score_mode, verbose) {
+  if (score_mode != "drop-only" & dim(accPert[score > 1])[1]) {
     base.dt <- rbind(accPert[score > 1, score, by=list(user.a, user.b)], bgacc[score > 1, score, by=list(user.a, user.b)])
-    ret <- with(relabeller(base.dt), graphPartition(res, mp, bgpc, verbose))
-    ret
+    with(relabeller(base.dt), graphPartition(res, mp, bgpc, verbose))
+  } else if (dim(accPert)[1]) {
+    base.dt <- rbind(accPert[, score, by=list(user.a, user.b)], bgacc[, score, by=list(user.a, user.b)])
+    with(relabeller(base.dt), graphPartition(res, mp, bgpc, verbose))
   } else emptygraph
 }
 
@@ -112,7 +114,8 @@ parse_args <- function(argv = commandArgs(trailingOnly = T)) {
   req_pos <- list(
     bgaccs=listACC,
     bgpccommunities=listPC,
-    acc.dt=readRDS
+    acc.dt=readRDS,
+    score_mode=identity
   )
   parsed <- optparse::parse_args(parser, argv, positional_arguments = length(req_pos))
   parsed$options$help <- NULL

@@ -91,6 +91,8 @@ ALLDETECTBASEPBS += base-$(subst /,-,$(1))-$(subst /,-,$(2)).pbs
 endef
 
 ALLDETECTPBS :=
+
+ALLFINALPCPBS :=
 # # loop over covert dims, then analysis dims, then sample N
 define detecting # 1 dir for covert, 2 is dir for detection
 # % = sample
@@ -108,11 +110,12 @@ ALLDETECTPBS += detect-$(subst /,-,$(1))-$(subst /,-,$(2)).pbs
 
 $(BPATH)/$(1)/$(2)/%/pc.rds: spinglass-detect.R $(DATAPATH)/background/$(2)/acc $(DATAPATH)/background/$(2)/pc $(BPATH)/$(1)/$(2)/%/acc.rds
 	mkdir -p $$(dir $$@)
-	$(R) $$^ > $$@
+	$(R) $$^ $(lastword $(subst /,$(SPACE),$(2))) > $$@
 
-endef
+pc-$(subst /,-,$(1))-$(subst /,-,$(2)).pbs: pc-detect.sh
+	./$$^ $(subst /,-,$(1))-$(subst /,-,$(2)) $(1)/$(2) $(SAMPN) > $$@
 
-define detectingsecond # % = sample/increment; 1 = covert dims, 2 = analysis dims
+ALLFINALPCPBS += pc-$(subst /,-,$(1))-$(subst /,-,$(2)).pbs
 
 endef
 
@@ -131,11 +134,19 @@ $(eval $(call detecting,$(d),$(b)))\
 alldetectbasepbs: $(ALLDETECTBASEPBS)
 allsnapsreviewpbs: $(SNAPBASEPBS)
 alldetectpbs: $(ALLDETECTPBS)
+allfinalpbs: $(ALLFINALPCPBS)
 
 .PHONY: submitsomebase
 
 submitsomebase: alldetectbasepbs
 	for f in $(wordlist $(s),$(e),$(ALLDETECTBASEPBS)); do qsub $$f; done;
+
+submitsomeacc: alldetectpbs
+	for f in $(wordlist $(s),$(e),$(ALLDETECTPBS)); do qsub $$f; done;
+
+submitsomepc: allfinalpbs
+	for f in $(wordlist $(s),$(e),$(ALLFINALPCPBS)); do qsub $$f; done;
+
 
 # $(foreach d,$(COVERTDIMS),\
 #  $(foreach b,$(BG-FACTORIAL),\
