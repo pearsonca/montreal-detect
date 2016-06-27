@@ -56,7 +56,7 @@ parse_args <- function(argv = commandArgs(trailingOnly = T)) {
 
 emptyscore <- data.table(community=integer(0), user.a = integer(0), user.b=integer(0), score=integer(0), increment=integer(0))
 
-scorePerturbations <- function(pertComms, bgcommunities, scoring) {
+scorePerturbations <- function(pertComms, bgcommunities, scoring, trim.dt) {
   subset(rbindlist(mapply(function(inc, bginc) {
     perturb.dt <- pertComms[increment == inc, list(user_id, community)]
     res <- if (dim(perturb.dt)[1]) {
@@ -72,7 +72,7 @@ scorePerturbations <- function(pertComms, bgcommunities, scoring) {
     } else emptyscore
 #     don't want raw.pairs, want cc / cu pairs
     if ((scoring == "bonus") & dim(res)[1]) {
-      pairs.dt <- trim.dt[]
+      pairs.dt <- setkey(trim.dt[increment == inc], user.a, user.b)
       setkey(res, user.a, user.b)
       tars <- res[pairs.dt][!is.na(community), list(increment=T), keyby=list(user.a, user.b)]
       res[tars, score := score + 1]
@@ -98,7 +98,7 @@ accumPerturbedScores <- function(perturbedScores, discount, censor, n) {
 saveRDS(with(parse_args(
 #  pre-spinglass-score.R $(DATAPATH)/background/$(dir $(2))base $(BPATH)/$(1)/$(dir $(2))%/base.rds interval window mode  
 ),{
-  perturbedScores <- scorePerturbations(perturbedCommunities, bgcommunities, scoremode)
+  perturbedScores <- scorePerturbations(perturbedCommunities, bgcommunities, scoremode, trim.dt)
   accumulatedPerturbs <- accumPerturbedScores(perturbedScores, 0.9, 6, length(bgcommunities))
   rbindlist(accumulatedPerturbs)
 }), pipe("cat","wb"))
