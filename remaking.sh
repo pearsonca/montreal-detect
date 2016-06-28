@@ -3,7 +3,7 @@
 #SBATCH --job-name=remaking
 #SBATCH -o remaking.o
 #SBATCH -e remaking.err
-#SBATCH --mail-type=a
+#SBATCH --mail-type=FAIL
 #SBATCH --mail-user=cap10@ufl.edu
 #SBATCH -t=2:00:00
 #SBATCH --cpus-per-task=1

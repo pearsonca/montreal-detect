@@ -3,7 +3,7 @@ cat <<EOF
 #SBATCH --job-name=$1
 #SBATCH -o $1.o
 #SBATCH -e $1.err
-#SBATCH --mail-type=a
+#SBATCH --mail-type=FAIL
 #SBATCH --mail-user=cap10@ufl.edu
 #SBATCH -t=24:00:00
 #SBATCH --cpus-per-task=1
