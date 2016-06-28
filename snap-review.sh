@@ -8,7 +8,7 @@ cat <<EOF
 #SBATCH --mail-user=cap10@ufl.edu
 #SBATCH -t=4:00:00
 #SBATCH --cpus-per-task=1
-#SBATCH -N=1
+#SBATCH -N 1
 #SBATCH --mem-per-cpu=2gb
 
 module load gcc/5.2.0 R/3.2.2
