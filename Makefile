@@ -139,13 +139,13 @@ allfinalpbs: $(ALLFINALPCPBS)
 .PHONY: submitsomebase
 
 submitsomebase: alldetectbasepbs
-	for f in $(wordlist $(s),$(e),$(ALLDETECTBASEPBS)); do qsub $$f; done;
+	for f in $(wordlist $(s),$(e),$(ALLDETECTBASEPBS)); do sbatch $$f; done;
 
 submitsomeacc: alldetectpbs
-	for f in $(wordlist $(s),$(e),$(ALLDETECTPBS)); do qsub $$f; done;
+	for f in $(wordlist $(s),$(e),$(ALLDETECTPBS)); do sbatch $$f; done;
 
 submitsomepc: allfinalpbs
-	for f in $(wordlist $(s),$(e),$(ALLFINALPCPBS)); do qsub $$f; done;
+	for f in $(wordlist $(s),$(e),$(ALLFINALPCPBS)); do sbatch $$f; done;
 
 
 # $(foreach d,$(COVERTDIMS),\

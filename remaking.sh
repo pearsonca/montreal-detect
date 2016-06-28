@@ -1,19 +1,20 @@
 #!/bin/bash
-#PBS -r n
-#PBS -N remaking
-#PBS -o remaking.o
-#PBS -e remaking.err
-#PBS -m a
-#PBS -M cap10@ufl.edu
-#PBS -l walltime=2:00:00
-#PBS -l nodes=1:ppn=1
-#PBS -l pmem=2gb
-#PBS -t 1-17
+#SBATCH -r n
+#SBATCH --job-name=remaking
+#SBATCH -o remaking.o
+#SBATCH -e remaking.err
+#SBATCH --mail-type=a
+#SBATCH --mail-user=cap10@ufl.edu
+#SBATCH -t=2:00:00
+#SBATCH --cpus-per-task=1
+#SBATCH -N=1
+#SBATCH --mem-per-cpu=2gb
+#SBATCH --array=1-17
 
 module load gcc/5.2.0 R/3.2.2
 cd /lfs/scratch/cap10/montreal-detect
 
-tar=`cat notes_remaking | tail -n +$PBS_ARRAYID | head -1`
+tar=`cat notes_remaking | tail -n +$SLURM_ARRAY_TASK_ID | head -1`
 
 rm $tar
 
