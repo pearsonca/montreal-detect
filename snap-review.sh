@@ -6,7 +6,7 @@ cat <<EOF
 #SBATCH -e $1.err
 #SBATCH -m a
 #SBATCH --mail-user=cap10@ufl.edu
-#SBATCH -t=4:00:00
+#SBATCH -t 4:00:00
 #SBATCH --cpus-per-task=1
 #SBATCH -N 1
 #SBATCH --mem-per-cpu=2gb

@@ -5,7 +5,7 @@
 #SBATCH -e remaking.err
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=cap10@ufl.edu
-#SBATCH -t=2:00:00
+#SBATCH -t 2:00:00
 #SBATCH --cpus-per-task=1
 #SBATCH -N 1
 #SBATCH --mem-per-cpu=2gb
