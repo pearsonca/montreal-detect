@@ -13,7 +13,7 @@ cat <<EOF
 #SBATCH --array=1-$3
 
 module load gcc/5.2.0 R/3.2.2
-cd /scratch/lfs/cap10/montreal-detect
+cd /ufrc/singer/cap10/montreal-detect
 tar=\$(printf 'input/detection/$2/%03d/pc.rds' \$SLURM_ARRAY_TASK_ID)
 make \$tar
 EOF
