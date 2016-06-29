@@ -95,9 +95,7 @@ accumPerturbedScores <- function(perturbedScores, discount, censor, n) {
   )
 }
 
-saveRDS(with(parse_args(
-#  pre-spinglass-score.R $(DATAPATH)/background/$(dir $(2))base $(BPATH)/$(1)/$(dir $(2))%/base.rds interval window mode  
-),{
+saveRDS(with(parse_args(),{
   perturbedScores <- scorePerturbations(perturbedCommunities, bgcommunities, scoremode, trim.dt)
   accumulatedPerturbs <- accumPerturbedScores(perturbedScores, 0.9, 6, length(bgcommunities))
   rbindlist(accumulatedPerturbs)

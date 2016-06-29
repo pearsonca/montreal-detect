@@ -8,7 +8,7 @@ cat <<EOF
 #SBATCH --mail-user=cap10@ufl.edu
 #SBATCH -t 8:00:00
 #SBATCH --cpus-per-task=1
-#SBATCH -N 1
+#SBATCH -N1
 #SBATCH --mem-per-cpu=2gb
 #SBATCH --array=1-$3
 
