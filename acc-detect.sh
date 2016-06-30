@@ -8,7 +8,7 @@ cat <<EOF
 #SBATCH -t 24:00:00
 #SBATCH --cpus-per-task=1
 #SBATCH -N1
-#SBATCH --mem-per-cpu=8gb
+#SBATCH --mem-per-cpu=24gb
 #SBATCH --array=1-$3
 
 module load gcc/5.2.0 R/3.2.2
