@@ -2,11 +2,6 @@
 
 rm(list=ls())
 
-# (1) raw background
-# (2) location lifetimes to censor covert
-# (3) reference persistence communities
-# (4) reference simulation source
-
 require(data.table)
 require(igraph)
 require(parallel)
@@ -28,7 +23,7 @@ readFore <- function(wh) {
 parse_args <- function(argv = commandArgs(trailingOnly = T)) {
   parser <- optparse::OptionParser(
     usage = "usage: %prog path/to/precomputed path/to/simoutcomms.rds path/to/target",
-    description = "compute snapshot communities + persistence scores for a simulation",
+    description = "accumulate scores prior to persistence calculations",
     option_list = list(
       optparse::make_option(
         c("--verbose","-v"),  action="store_true", default = FALSE,
@@ -36,7 +31,7 @@ parse_args <- function(argv = commandArgs(trailingOnly = T)) {
       )
     )
   )
-  #  pre-spinglass-score.R $(DATAPATH)/background/$(dir $(2))base $(BPATH)/$(1)/$(dir $(2))%/base.rds interval window mode  
+
   req_pos <- list(
     bgcommunities=loadBase,
     perturbedCommunities=readRDS,
