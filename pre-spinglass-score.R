@@ -72,21 +72,36 @@ scorePerturbations <- function(pertComms, bgcommunities, scoring, trim.dt) {
   , select=-community)
 }
 
-accumPerturbedScores <- function(perturbedScores, discount, censor, n) {
-  censor_score <- discount^censor
-  Reduce(
-    function(prev, currentN) {
-      newres <- rbind(perturbedScores[increment == currentN, list(user.a, user.b, score, increment)], data.table::copy(prev)[, score := score*discount ])
-      newres[,list(score = sum(score), increment = currentN), keyby=list(user.a, user.b)][score > censor_score]
-    },
-    2:n,
-    perturbedScores[increment == 1, list(user.a, user.b, score, increment)],
-    accumulate = T
-  )
+storePerturbedScores <- function(obj, fns, increment) {
+  saveRDS(obj, fns[increment])
+  obj
 }
 
-saveRDS(with(parse_args(),{
+accumPerturbedScores <- function(perturbedScores, tarfiles, discount, censor, n) {
+  censor_score <- discount^censor
+  res <- Reduce(
+    function(prev, currentN) {
+      newres <- rbind(perturbedScores[increment == currentN, list(user.a, user.b, score, increment)], data.table::copy(prev)[, score := score*discount ])
+      storePertubedScores(
+        newres[,list(score = sum(score), increment = currentN), keyby=list(user.a, user.b)][score > censor_score],
+        tarfiles, currentN
+      )
+    },
+    2:n,
+    storePerturbedScores(perturbedScores[increment == 1, list(user.a, user.b, score, increment)], tarfiles, 1)
+  )
+  TRUE
+}
+
+with(parse_args(),{
   perturbedScores <- scorePerturbations(perturbedCommunities, bgcommunities, scoremode, trim.dt)
-  accumulatedPerturbs <- accumPerturbedScores(perturbedScores, 0.9, 6, length(bgcommunities))
-  rbindlist(accumulatedPerturbs)
-}), pipe("cat","wb"))
+  tars <- sprintf("%s/%03d.rds", tardir, 1:length(bgcommunities))
+  if (verbose) cat(paste0(tars, collapse = "\n"), file=stderr())
+  accumPerturbedScores(
+    perturbedScores,
+    tars,
+    MoreArgs = list(discount=0.9, censor=6, n=length(bgcommunities), tardir=tardir)
+  )
+  accumPerturbedScores(perturbedScores, 0.9, 6, length(bgcommunities))
+  # rbindlist(accumulatedPerturbs)
+})

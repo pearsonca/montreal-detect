@@ -96,9 +96,9 @@ ALLFINALPCPBS :=
 # # loop over covert dims, then analysis dims, then sample N
 define detecting # 1 dir for covert, 2 is dir for detection
 # % = sample
-$(BPATH)/$(1)/$(2)/%/acc.rds: pre-spinglass-score.R $(DATAPATH)/background/$(dir $(2))base $(BPATH)/$(1)/$(dir $(2))%/base.rds $(BPATH)/$(1)/$(dir $(2))%/trim.rds
+$(BPATH)/$(1)/$(2)/%/acc: pre-spinglass-score.R $(DATAPATH)/background/$(dir $(2))base $(BPATH)/$(1)/$(dir $(2))%/base.rds $(BPATH)/$(1)/$(dir $(2))%/trim.rds
 	mkdir -p $$(dir $$@)
-	$(R) $$^ $(subst /,$(SPACE),$(2)) > $$@
+	$(R) $$^ $(subst /,$(SPACE),$(2)) $$@
 
 # need to get sample number in here somehow, but shouldn't be an issue
 detect-$(subst /,-,$(1))-$(subst /,-,$(2)).pbs: acc-detect.sh
@@ -108,7 +108,7 @@ ALLDETECTPBS += detect-$(subst /,-,$(1))-$(subst /,-,$(2)).pbs
 
 .PRECIOUS: $(BPATH)/$(1)/$(2)/%/acc.rds
 
-$(BPATH)/$(1)/$(2)/%/pc.rds: spinglass-detect.R $(DATAPATH)/background/$(2)/acc $(DATAPATH)/background/$(2)/pc $(BPATH)/$(1)/$(2)/%/acc.rds
+$(BPATH)/$(1)/$(2)/%/pc.rds: spinglass-detect.R $(DATAPATH)/background/$(2)/acc $(DATAPATH)/background/$(2)/pc $(BPATH)/$(1)/$(2)/%/acc
 	mkdir -p $$(dir $$@)
 	$(R) $$^ $(lastword $(subst /,$(SPACE),$(2))) > $$@
 
