@@ -102,6 +102,6 @@ with(parse_args(),{
     perturbedScores, tars,
     discount=0.9, censor=6, n=length(bgcommunities)
   )
-  accumPerturbedScores(perturbedScores, 0.9, 6, length(bgcommunities))
+  # accumPerturbedScores(perturbedScores, 0.9, 6, length(bgcommunities))
   # rbindlist(accumulatedPerturbs)
 })
