@@ -33,7 +33,7 @@ parse_args <- function(argv = commandArgs(trailingOnly = T)) {
   )
   req_pos <- list(
     bgcommunities=loadBase, perturbedCommunities=readRDS, trim.dt = readRDS,
-    intDays = as.integer, winDays = as.integer, scoremode = identity
+    intDays = as.integer, winDays = as.integer, scoremode = identity, tardir = identity
   )
   parsed <- optparse::parse_args(parser, argv, positional_arguments = length(req_pos))
   parsed$options$help <- NULL
