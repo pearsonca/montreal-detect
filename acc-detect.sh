@@ -13,6 +13,6 @@ cat <<EOF
 
 module load gcc/5.2.0 R/3.2.2
 cd /ufrc/singer/cap10/montreal-detect
-tar=\$(printf 'input/detection/$2/%03d/acc.rds' \$SLURM_ARRAY_TASK_ID)
+tar=\$(printf 'input/detection/$2/%03d/acc' \$SLURM_ARRAY_TASK_ID)
 make \$tar
 EOF
