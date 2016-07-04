@@ -72,23 +72,24 @@ scorePerturbations <- function(pertComms, bgcommunities, scoring, trim.dt) {
   , select=-community)
 }
 
-storePerturbedScores <- function(obj, fns, increment) {
-  saveRDS(obj, fns[increment])
+storePerturbedScores <- function(obj, fn) {
+  saveRDS(obj, fn)
   obj
 }
 
 accumPerturbedScores <- function(perturbedScores, tarfiles, discount, censor, n) {
   censor_score <- discount^censor
-  res <- Reduce(
+  incs <- 2:n
+  Reduce(
     function(prev, currentN) {
       newres <- rbind(perturbedScores[increment == currentN, list(user.a, user.b, score, increment)], data.table::copy(prev)[, score := score*discount ])
       storePerturbedScores(
         newres[,list(score = sum(score), increment = currentN), keyby=list(user.a, user.b)][score > censor_score],
-        tarfiles, currentN
+        tarfiles[currentN]
       )
     },
-    2:n,
-    storePerturbedScores(perturbedScores[increment == 1, list(user.a, user.b, score, increment)], tarfiles, 1)
+    incs,
+    storePerturbedScores(perturbedScores[increment == 1, list(user.a, user.b, score, increment)], tarfiles[1])
   )
   TRUE
 }
@@ -98,8 +99,7 @@ with(parse_args(),{
   tars <- sprintf("%s/%03d.rds", tardir, 1:length(bgcommunities))
   if (verbose) cat(paste0(tars, collapse = "\n"), file=stderr())
   accumPerturbedScores(
-    perturbedScores,
-    tars,
+    perturbedScores, tars,
     discount=0.9, censor=6, n=length(bgcommunities)
   )
   accumPerturbedScores(perturbedScores, 0.9, 6, length(bgcommunities))
