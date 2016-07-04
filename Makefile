@@ -97,7 +97,7 @@ ALLFINALPCPBS :=
 define detecting # 1 dir for covert, 2 is dir for detection
 # % = sample
 $(BPATH)/$(1)/$(2)/%/acc: pre-spinglass-score.R $(DATAPATH)/background/$(dir $(2))base $(BPATH)/$(1)/$(dir $(2))%/base.rds $(BPATH)/$(1)/$(dir $(2))%/trim.rds
-	mkdir -p $$(dir $$@)
+	mkdir -p $$@
 	$(R) $$^ $(subst /,$(SPACE),$(2)) $$@
 
 # need to get sample number in here somehow, but shouldn't be an issue
