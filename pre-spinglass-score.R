@@ -82,7 +82,7 @@ accumPerturbedScores <- function(perturbedScores, tarfiles, discount, censor, n)
   res <- Reduce(
     function(prev, currentN) {
       newres <- rbind(perturbedScores[increment == currentN, list(user.a, user.b, score, increment)], data.table::copy(prev)[, score := score*discount ])
-      storePertubedScores(
+      storePerturbedScores(
         newres[,list(score = sum(score), increment = currentN), keyby=list(user.a, user.b)][score > censor_score],
         tarfiles, currentN
       )
