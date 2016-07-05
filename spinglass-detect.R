@@ -125,13 +125,13 @@ parse_args <- function(argv = commandArgs(trailingOnly = T)) {
   result
 }
 
-resolve <- function(bgaccs, bgpccommunities, pertaccs, verbose) {
+resolve <- function(bgaccs, bgpccommunities, pertaccs, score_mode, verbose) {
     n <- min(length(bgaccs), length(bgpccommunities))
     ret <- rbindlist(mapply(function(bgaccincfn, bgpcincfn, paccfn, accinc){
       agg.dt <- readRDS(bgaccincfn)
       pc.dt <- readRDS(bgpcincfn)
       sl <- readRDS(paccfn)
-      res <- perturbedPersistenceComms(sl, agg.dt, pc.dt, verbose)
+      res <- perturbedPersistenceComms(sl, agg.dt, pc.dt, score_mode, verbose)
       res[, increment := accinc ]
       if(verbose) cat("finishing increment ", accinc, "; size ",dim(res),"\n",file=stderr())
       res
@@ -147,7 +147,7 @@ saveRDS(
     parse_args(
 #      args #c(sprintf("input/background-clusters/spin-glass/agg-15-30/%03d.rds",i),sprintf("input/background-clusters/spin-glass/pc-15-30/%03d.rds",i),sprintf("output/matched/mid/lo/late/10/001-covert-0/%03d-acc.rds",i), "-v")
     ),
-    resolve(bgaccs, bgpccommunities, pertaccs, verbose)
+    resolve(bgaccs, bgpccommunities, pertaccs, score_mode, verbose)
   ),
   pipe("cat","wb")
 )
