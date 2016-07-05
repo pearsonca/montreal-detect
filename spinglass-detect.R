@@ -38,7 +38,7 @@ smallComponents <- function(inSmalls, allnewusers, comps, referenceCommunities, 
 
 largeCommunities <- function(inBigs, allnewusers, comps, gg, referenceCommunities, mp, base, verbose = F) if (!sum(inBigs)) {
     if (verbose) cat("no big communities\n", file=stderr())
-    base 
+    base
   } else {
   candidates <- allnewusers[inBigs]
   res <- emptycomp
@@ -69,20 +69,20 @@ largeCommunities <- function(inBigs, allnewusers, comps, gg, referenceCommunitie
 graphPartition <- function(res, mp, referenceCommunities, ulim=60, verbose=F) {
   setkey(referenceCommunities, user_id)
   allnewusers <- mp[user_id %in% setdiff(mp[res[,unique(c(user.a, user.b))], user_id], referenceCommunities$user_id), new_user_id]
-  
+
   gg <- graph(t(res[,list(user.a, user.b)]), directed=F)
   E(gg)$weight <- res$score
-  
+
   comps <- components(gg)
-  
+
   leftovers <- which(comps$csize > ulim)
   completeCommunities <- (1:comps$no)[-leftovers] # components to treat as their own communities
-  
+
   newComms <- comps$membership[allnewusers]
-  
+
   inSmalls <- newComms %in% completeCommunities
   inBigs <- !inSmalls
-  
+
   base <- decompose(allnewusers, comps, gg, completeCommunities, referenceCommunities, mp, verbose)
   originalUserIDs(base, mp)
 }
@@ -99,6 +99,7 @@ perturbedPersistenceComms <- function(accPert, bgacc, bgpc, score_mode, verbose)
 
 listPC <- function(srcpath) list.files(srcpath, pattern = "\\d{3}\\.rds$", full.names = T)
 listACC <- function(srcpath) list.files(srcpath, pattern = "\\d{3}\\.rds$", full.names = T)
+listPacc <- function(srcpath) list.files(srcpath, pattern = "\\d{3}\\.rds$", full.names = T)
 
 parse_args <- function(argv = commandArgs(trailingOnly = T)) {
   parser <- optparse::OptionParser(
@@ -114,7 +115,7 @@ parse_args <- function(argv = commandArgs(trailingOnly = T)) {
   req_pos <- list(
     bgaccs=listACC,
     bgpccommunities=listPC,
-    acc.dt=readRDS,
+    pertaccs=listPacc,
     score_mode=identity
   )
   parsed <- optparse::parse_args(parser, argv, positional_arguments = length(req_pos))
@@ -124,17 +125,17 @@ parse_args <- function(argv = commandArgs(trailingOnly = T)) {
   result
 }
 
-resolve <- function(bgaccs, bgpccommunities, acc.dt, verbose) {
-    n <- min(length(bgaccs), length(bgpccommunities), 65)
-    ret <- rbindlist(mapply(function(bgaccincfn, bgpcincfn, accinc){
+resolve <- function(bgaccs, bgpccommunities, pertaccs, verbose) {
+    n <- min(length(bgaccs), length(bgpccommunities))
+    ret <- rbindlist(mapply(function(bgaccincfn, bgpcincfn, paccfn, accinc){
       agg.dt <- readRDS(bgaccincfn)
       pc.dt <- readRDS(bgpcincfn)
-      sl <- acc.dt[increment == accinc]
+      sl <- readRDS(paccfn)
       res <- perturbedPersistenceComms(sl, agg.dt, pc.dt, verbose)
       res[, increment := accinc ]
-      if(verbose) cat("finishing increment",accinc,"; size ",dim(res),"\n",file=stderr())
+      if(verbose) cat("finishing increment ", accinc, "; size ",dim(res),"\n",file=stderr())
       res
-    }, bgaccincfn=bgaccs[1:n], bgpcincfn=bgpccommunities[1:n], accinc=1:n, SIMPLIFY = F))
+    }, bgaccincfn=bgaccs[1:n], bgpcincfn=bgpccommunities[1:n], pertaccs=pertaccs[1:n], accinc=1:n, SIMPLIFY = F))
     # browser()
     ret
 }
@@ -146,7 +147,7 @@ saveRDS(
     parse_args(
 #      args #c(sprintf("input/background-clusters/spin-glass/agg-15-30/%03d.rds",i),sprintf("input/background-clusters/spin-glass/pc-15-30/%03d.rds",i),sprintf("output/matched/mid/lo/late/10/001-covert-0/%03d-acc.rds",i), "-v")
     ),
-    resolve(bgaccs, bgpccommunities, acc.dt, verbose)
+    resolve(bgaccs, bgpccommunities, pertaccs, verbose)
   ),
   pipe("cat","wb")
 )
@@ -166,5 +167,5 @@ saveRDS(
 #   )
 #   cat("finished",i,"\n")
 # }
-# 
+#
 # # parse foreground according to interval
