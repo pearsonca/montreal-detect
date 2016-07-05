@@ -126,12 +126,16 @@ parse_args <- function(argv = commandArgs(trailingOnly = T)) {
 }
 
 resolve <- function(bgaccs, bgpccommunities, pertaccs, score_mode, verbose) {
-    n <- min(length(bgaccs), length(bgpccommunities))
+    n <- min(length(bgaccs), length(bgpccommunities), length(pertaccs))
     ret <- rbindlist(mapply(function(bgaccincfn, bgpcincfn, paccfn, accinc){
-      agg.dt <- readRDS(bgaccincfn)
-      pc.dt <- readRDS(bgpcincfn)
-      sl <- readRDS(paccfn)
-      res <- perturbedPersistenceComms(sl, agg.dt, pc.dt, score_mode, verbose)
+      agg.dt <- try(readRDS(bgaccincfn))
+      pc.dt <- try(readRDS(bgpcincfn))
+      sl <- try(readRDS(paccfn))
+      if (any(sapply(c(agg.dt,pc.dt,sl), class) == "try-error")) {
+        res <- data.table::copy(emptygraph)
+      } else {
+        res <- perturbedPersistenceComms(sl, agg.dt, pc.dt, score_mode, verbose)
+      }
       res[, increment := accinc ]
       if(verbose) cat("finishing increment ", accinc, "; size ",dim(res),"\n",file=stderr())
       res
