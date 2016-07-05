@@ -135,7 +135,7 @@ resolve <- function(bgaccs, bgpccommunities, pertaccs, score_mode, verbose) {
       res[, increment := accinc ]
       if(verbose) cat("finishing increment ", accinc, "; size ",dim(res),"\n",file=stderr())
       res
-    }, bgaccincfn=bgaccs[1:n], bgpcincfn=bgpccommunities[1:n], pertaccs=pertaccs[1:n], accinc=1:n, SIMPLIFY = F))
+    }, bgaccincfn=bgaccs[1:n], bgpcincfn=bgpccommunities[1:n], paccfn=pertaccs[1:n], accinc=1:n, SIMPLIFY = F))
     # browser()
     ret
 }
