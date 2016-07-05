@@ -141,7 +141,7 @@ resolve <- function(bgaccs, bgpccommunities, pertaccs, score_mode, verbose) {
 }
 
 #for (i in 1:135) {
-# args <- c("input/digest/background/15/30/censor/acc", "input/digest/background/15/30/censor/pc", "input/detection/high/hi/early/10/15/30/censor/010/acc.rds","-v")
+# args <- c("input/digest/background/15/15/drop-only/acc", "input/digest/background/15/15/drop-only/pc", "input/detection/low/lo/early/5/15/15/drop-only/010/acc", "drop-only","-v")
 saveRDS(
   with(
     parse_args(
