@@ -125,6 +125,8 @@ parse_args <- function(argv = commandArgs(trailingOnly = T)) {
   result
 }
 
+badpcbg <- data.table(user_id=integer(), community=integer())
+
 resolve <- function(bgaccs, bgpccommunities, pertaccs, score_mode, verbose) {
     n <- min(length(bgaccs), length(bgpccommunities), length(pertaccs))
     ret <- rbindlist(mapply(function(bgaccincfn, bgpcincfn, paccfn, accinc){
@@ -134,6 +136,7 @@ resolve <- function(bgaccs, bgpccommunities, pertaccs, score_mode, verbose) {
       if (any(sapply(c(agg.dt,pc.dt,sl), class) == "try-error")) {
         res <- data.table::copy(emptygraph)
       } else {
+        if(dim(pc.dt)[2] == 0) pc.dt <- badpcbg
         res <- perturbedPersistenceComms(sl, agg.dt, pc.dt, score_mode, verbose)
       }
       res[, increment := accinc ]

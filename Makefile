@@ -117,6 +117,10 @@ pc-$(subst /,-,$(1))-$(subst /,-,$(2)).pbs: pc-detect.sh
 
 ALLFINALPCPBS += pc-$(subst /,-,$(1))-$(subst /,-,$(2)).pbs
 
+$(BPATH)/$(1)/$(2)/pcFTPR.rds: pc_review.R $(wildcard $(BPATH)/$(1)/$(2)/*/pc.rds)
+	$(R) $$< $(BPATH)/$(1)/$(2) $(DATAPATH)/background/$(2)/pc > $$@
+
+
 endef
 
 $(foreach d,$(COVERTDIMS),\
