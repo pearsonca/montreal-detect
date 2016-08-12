@@ -1,9 +1,8 @@
 cat <<EOF
 #!/bin/bash
-#SBATCH -r n
 #SBATCH --job-name=$1
-#SBATCH -o $1.o
-#SBATCH -e $1.err
+#SBATCH -o $1.o-%a
+#SBATCH -e $1.err-%a
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=cap10@ufl.edu
 #SBATCH -t 8:00:00
