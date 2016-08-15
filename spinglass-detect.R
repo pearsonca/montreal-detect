@@ -38,7 +38,7 @@ smallComponents <- function(inSmalls, allnewusers, comps, referenceCommunities, 
   data.table(new_user_id=allnewusers[inSmalls], community=consensusComms)
 }
 
-largeCommunities <- function(inBigs, allnewusers, comps, gg, referenceCommunities, mp, base, verbose = F) if (!sum(inBigs)) {
+largeCommunities <- function(inBigs, allnewusers, comps, gg, referenceCommunities, mp, base, verbose) if (!sum(inBigs)) {
     if (verbose) cat("no big communities\n", file=stderr())
     base
   } else {
