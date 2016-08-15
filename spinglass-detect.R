@@ -32,7 +32,7 @@ smallComponents <- function(inSmalls, allnewusers, comps, referenceCommunities, 
     othercomms[is.na(community), community := -1]
     if (verbose & (dim(othercomms)[1] == 0)) cat("community empty\n", file=stderr())
     tmp <- othercomms[,.N,by=community]
-    if (verbose) cat("maxes\n", paste(tmp$N, collapse=", "), file=stderr())
+    if (verbose) cat("maxes\n", paste(tmp$N, collapse=", "), "\n", file=stderr())
     tmp[N==max(N),max(community)]
   })
   data.table(new_user_id=allnewusers[inSmalls], community=consensusComms)
@@ -92,10 +92,10 @@ graphPartition <- function(res, mp, referenceCommunities, ulim=60, verbose) {
 perturbedPersistenceComms <- function(accPert, bgacc, bgpc, score_mode, verbose) {
   if (score_mode != "drop-only" & dim(accPert[score > 1])[1]) {
     base.dt <- rbind(accPert[score > 1, score, by=list(user.a, user.b)], bgacc[score > 1, score, by=list(user.a, user.b)])
-    with(relabeller(base.dt), graphPartition(res, mp, bgpc, verbose))
+    with(relabeller(base.dt), graphPartition(res, mp, bgpc, verbose=verbose))
   } else if (dim(accPert)[1]) {
     base.dt <- rbind(accPert[, score, by=list(user.a, user.b)], bgacc[, score, by=list(user.a, user.b)])
-    with(relabeller(base.dt), graphPartition(res, mp, bgpc, verbose))
+    with(relabeller(base.dt), graphPartition(res, mp, bgpc, verbose=verbose))
   } else emptygraph
 }
 
@@ -165,8 +165,10 @@ saveRDS(
   ),
   pipe("cat","wb")
 )
-#}
-#   args <- c(
+#} args <- c("input/digest/background/15/15/bonus/acc", "input/digest/background/15/15/bonus/pc", "input/detection/high/hi/early/20/15/15/bonus/001/acc", "bonus", "-v")
+#
+# bgaccincfn=bgaccs[ind]; bgpcincfn=bgpccommunities[ind]; paccfn=pertaccs[ind]; accinc=ind
+# args <- c(
 #     sprintf("input/background-clusters/spin-glass/agg-15-30/%03d.rds",i),
 #     sprintf("input/background-clusters/spin-glass/pc-15-30/%03d.rds",i),
 #     sprintf("output/matched/mid/lo/late/10/001-covert-0/%03d-acc.rds",i)
