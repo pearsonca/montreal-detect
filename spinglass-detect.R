@@ -30,7 +30,9 @@ smallComponents <- function(inSmalls, allnewusers, comps, referenceCommunities, 
     others <- setkey(mp[setdiff(which(comps$membership == comm), newMember), list(user_id)], user_id)
     othercomms <- referenceCommunities[others]
     othercomms[is.na(community), community := -1]
+    if (verbose & (dim(othercomms)[1] == 0)) cat("community empty\n", file=stderr())
     tmp <- othercomms[,.N,by=community]
+    if (verbose) cat("maxes\n", paste(tmp$N, collapse=", "), file=stderr())
     tmp[N==max(N),max(community)]
   })
   data.table(new_user_id=allnewusers[inSmalls], community=consensusComms)
