@@ -21,7 +21,7 @@ decompose <- function(allnewusers, comps, gg, completeCommunities, referenceComm
   )
 }
 
-smallComponents <- function(inSmalls, allnewusers, comps, referenceCommunities, mp, verbose = F) if (!sum(inSmalls)) {
+smallComponents <- function(inSmalls, allnewusers, comps, referenceCommunities, mp, verbose) if (!sum(inSmalls)) {
   if (verbose) cat("no small communities\n", file=stderr())
   emptycomp
 } else {
@@ -68,7 +68,7 @@ largeCommunities <- function(inBigs, allnewusers, comps, gg, referenceCommunitie
   rbind(base, res)
 }
 
-graphPartition <- function(res, mp, referenceCommunities, ulim=60, verbose=F) {
+graphPartition <- function(res, mp, referenceCommunities, ulim=60, verbose) {
   setkey(referenceCommunities, user_id)
   allnewusers <- mp[user_id %in% setdiff(mp[res[,unique(c(user.a, user.b))], user_id], referenceCommunities$user_id), new_user_id]
 
@@ -137,6 +137,7 @@ resolve <- function(bgaccs, bgpccommunities, pertaccs, score_mode, verbose) {
       sl <- try(readRDS(paccfn))
       if (any(sapply(c(agg.dt,pc.dt,sl), class) == "try-error")) {
         res <- data.table::copy(emptygraph)
+        if (verbose) cat("read error in one of",bgaccincfn, bgpcincfn, paccfn,"\n",file=stderr())
       } else {
         if(dim(pc.dt)[2] == 0) pc.dt <- badpcbg
         res <- perturbedPersistenceComms(sl, agg.dt, pc.dt, score_mode, verbose)
@@ -156,7 +157,9 @@ saveRDS(
     parse_args(
 #      args #c(sprintf("input/background-clusters/spin-glass/agg-15-30/%03d.rds",i),sprintf("input/background-clusters/spin-glass/pc-15-30/%03d.rds",i),sprintf("output/matched/mid/lo/late/10/001-covert-0/%03d-acc.rds",i), "-v")
     ),
-    resolve(bgaccs, bgpccommunities, pertaccs, score_mode, verbose)
+    ret <- resolve(bgaccs, bgpccommunities, pertaccs, score_mode, verbose)
+    if(verbose) warnings()
+    ret
   ),
   pipe("cat","wb")
 )
