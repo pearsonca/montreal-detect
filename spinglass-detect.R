@@ -131,21 +131,21 @@ badpcbg <- data.table(user_id=integer(), community=integer())
 
 resolve <- function(bgaccs, bgpccommunities, pertaccs, score_mode, verbose) {
     n <- min(length(bgaccs), length(bgpccommunities), length(pertaccs))
-    ret <- rbindlist(mapply(function(bgaccincfn, bgpcincfn, paccfn, accinc){
+    ret <- rbindlist(mapply(function(bgaccincfn, bgpcincfn, paccfn, accinc, verb){
       agg.dt <- try(readRDS(bgaccincfn))
       pc.dt <- try(readRDS(bgpcincfn))
       sl <- try(readRDS(paccfn))
       if (any(sapply(c(agg.dt,pc.dt,sl), class) == "try-error")) {
         res <- data.table::copy(emptygraph)
-        if (verbose) cat("read error in one of",bgaccincfn, bgpcincfn, paccfn,"\n",file=stderr())
+        if (verb) cat("read error in one of",bgaccincfn, bgpcincfn, paccfn,"\n",file=stderr())
       } else {
         if(dim(pc.dt)[2] == 0) pc.dt <- badpcbg
-        res <- perturbedPersistenceComms(sl, agg.dt, pc.dt, score_mode, verbose)
+        res <- perturbedPersistenceComms(sl, agg.dt, pc.dt, score_mode, verb)
       }
       res[, increment := accinc ]
-      if (verbose) cat("finishing increment ", accinc, "; size ",dim(res),"\n",file=stderr())
+      if (verb) cat("finishing increment ", accinc, "; size ",dim(res),"\n",file=stderr())
       res
-    }, bgaccincfn=bgaccs[1:n], bgpcincfn=bgpccommunities[1:n], paccfn=pertaccs[1:n], accinc=1:n, SIMPLIFY = F))
+    }, bgaccincfn=bgaccs[1:n], bgpcincfn=bgpccommunities[1:n], paccfn=pertaccs[1:n], accinc=1:n, MoreArgs=list(verb=verbose), SIMPLIFY = F))
     # browser()
     ret
 }
