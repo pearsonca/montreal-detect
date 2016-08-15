@@ -123,7 +123,7 @@ parse_args <- function(argv = commandArgs(trailingOnly = T)) {
   parsed <- optparse::parse_args(parser, argv, positional_arguments = length(req_pos))
   parsed$options$help <- NULL
   result <- c(mapply(function(f,c) f(c), req_pos, parsed$args, SIMPLIFY = F), parsed$options)
-  # if(result$verbose) cat(format(result), file=stderr())
+  if(result$verbose) cat("noisy\n", file=stderr())
   result
 }
 
