@@ -143,7 +143,7 @@ resolve <- function(bgaccs, bgpccommunities, pertaccs, score_mode, verbose) {
         res <- perturbedPersistenceComms(sl, agg.dt, pc.dt, score_mode, verbose)
       }
       res[, increment := accinc ]
-      if(verbose) cat("finishing increment ", accinc, "; size ",dim(res),"\n",file=stderr())
+      if (verbose) cat("finishing increment ", accinc, "; size ",dim(res),"\n",file=stderr())
       res
     }, bgaccincfn=bgaccs[1:n], bgpcincfn=bgpccommunities[1:n], paccfn=pertaccs[1:n], accinc=1:n, SIMPLIFY = F))
     # browser()
@@ -157,9 +157,11 @@ saveRDS(
     parse_args(
 #      args #c(sprintf("input/background-clusters/spin-glass/agg-15-30/%03d.rds",i),sprintf("input/background-clusters/spin-glass/pc-15-30/%03d.rds",i),sprintf("output/matched/mid/lo/late/10/001-covert-0/%03d-acc.rds",i), "-v")
     ),
-    ret <- resolve(bgaccs, bgpccommunities, pertaccs, score_mode, verbose)
-    if(verbose) warnings()
-    ret
+    {
+      ret <- resolve(bgaccs, bgpccommunities, pertaccs, score_mode, verbose)
+      if (verbose) warnings()
+      ret
+    }
   ),
   pipe("cat","wb")
 )
