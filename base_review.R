@@ -1,6 +1,6 @@
 # review the base detection for some combination of params, across samples
 
-require(ggplot2)
+#require(ggplot2)
 require(data.table)
 
 args <- commandArgs(trailingOnly = T)
