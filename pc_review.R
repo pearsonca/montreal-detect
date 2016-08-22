@@ -1,7 +1,7 @@
 # review the base detection for some combination of params, across samples
 rm(list=ls())
 
-require(ggplot2)
+# require(ggplot2)
 require(data.table)
 
 args <- commandArgs(trailingOnly = T)
@@ -28,7 +28,10 @@ saveRDS(rbindlist(lapply(fgs, function(fn) {
   # parse out covert size from fn
   samp <- as.integer(sub(".+/(\\d+)/pc.rds", "\\1", fn))
   foreground <- try(readRDS(fn))
-  if (class(foreground)[1]=="try-error") stop(fn)
+  if (class(foreground)[1]=="try-error") {
+    cat(fn," is bad\n", file=stderr())
+    foreground <- emptypc
+  }
 
   counts <- rbind(background, foreground)[,
     list(total=.N, bg=sum(user_id >= 0), fg=sum(user_id < 0)),
@@ -36,31 +39,31 @@ saveRDS(rbindlist(lapply(fgs, function(fn) {
   ]
 
 #   snap <- counts[foreground][user_id < 0]
-#   
+#
 #   jn <- snap[,
 #     list(found = total <= 30),
 #     keyby=list(increment, user_id)
 #   ]
-  
+
   res <- counts[, list(
     snapFPR = sum(bg[total <= 30])/max(sum(bg)),
     snapTPR = sum(fg[total <= 30])/foregroundN
   ), keyby=increment]
-  
+
   res[, sample_id := samp ]
-  
+
   res
 })), pipe("cat","wb"))
 
-wrn <- warnings()
-cat(paste(names(wrn), unlist(wrn), collapse = "\n"), file=stderr())
-
-plotres <- thing[,{ tar <- which.max(snapTPR); list(`peak detection TPR`=snapTPR[tar], increment=increment[tar])},by=sample_id]
-ggplot(plotres) + aes(x=increment, y=`peak detection TPR`, label=sample_id) + geom_text() + coord_cartesian(ylim=c(0,1)) + theme_bw()
-
-plotres2 <- thing[snapTPR != 0, c(list(`summary TPR`=sum(snapTPR)),as.list(quantile(snapTPR))),by=sample_id]
-ggplot(plotres2) + aes(y=`summary TPR`, x=sample_id) + geom_point() + theme_bw()
-setkey(plotres2,`100%`,`75%`,`50%`,`25%`,`0%`)
-plotres2[,list(new_sample_id=.GRP),by=list(`100%`,`75%`,`50%`,`25%`,`0%`,sample_id)]
-plotres3 <- melt(, measure.vars = c('0%','25%','50%','75%','100%'), variable.name = "quantile")
-ggplot(plotres3) + aes(y=value, x=sample_id, color=quantile) + geom_line() + theme_bw()
+# wrn <- warnings()
+# cat(paste(names(wrn), unlist(wrn), collapse = "\n"), file=stderr())
+#
+# plotres <- thing[,{ tar <- which.max(snapTPR); list(`peak detection TPR`=snapTPR[tar], increment=increment[tar])},by=sample_id]
+# ggplot(plotres) + aes(x=increment, y=`peak detection TPR`, label=sample_id) + geom_text() + coord_cartesian(ylim=c(0,1)) + theme_bw()
+#
+# plotres2 <- thing[snapTPR != 0, c(list(`summary TPR`=sum(snapTPR)),as.list(quantile(snapTPR))),by=sample_id]
+# ggplot(plotres2) + aes(y=`summary TPR`, x=sample_id) + geom_point() + theme_bw()
+# setkey(plotres2,`100%`,`75%`,`50%`,`25%`,`0%`)
+# plotres2[,list(new_sample_id=.GRP),by=list(`100%`,`75%`,`50%`,`25%`,`0%`,sample_id)]
+# plotres3 <- melt(, measure.vars = c('0%','25%','50%','75%','100%'), variable.name = "quantile")
+# ggplot(plotres3) + aes(y=value, x=sample_id, color=quantile) + geom_line() + theme_bw()
